@@ -1,115 +1,113 @@
 # ========================================
-# 鸽切监控 + AI 视频切片系统
-# 统一 Python 依赖
+# GeQie Monitor + AI Video Clip System
+# Unified Python Dependencies
 # ========================================
 
 # ========================================
-# 弹幕监控系统 (geqie-monitor) 依赖
+# Geqie Monitor Dependencies
 # ========================================
 
-# Web 框架 (Flask)
+# Web Framework (Flask)
 Flask==3.1.2
 Flask-Compress==1.23
 Flask-SocketIO==5.4.1
 python-socketio==5.11.4
 python-engineio==4.13.0
 
-# Flask 依赖
+# Flask Dependencies
 Werkzeug==3.1.5
 Jinja2==3.1.6
 MarkupSafe==3.0.3
 
-# B站 API
+# Bilibili API
 bilibili-api-python==17.4.1
 
-# 数据处理
+# Data Processing
 PyYAML==6.0.3
 pytz==2025.2
 apscheduler==3.11.2
 
-# HTTP 客户端
+# HTTP Clients
 requests==2.32.5
 aiohttp==3.13.3
 aiofiles==23.2.1
 
-# 其他依赖
+# Other Dependencies
 beautifulsoup4==4.14.3
 blinker==1.9.0
 certifi==2026.1.4
 colorama==0.4.6
 
-# 中文 NLP 库（弹幕情感分析、词云生成）
+# Chinese NLP Libraries
 snownlp==0.12.3
 jieba==0.42.1
 wordcloud==1.9.3
 
-# 数据导出功能依赖
-# Excel 导出
+# Data Export Dependencies
 openpyxl>=3.1.0
-# PDF 导出
 reportlab>=4.0.0
 
 # ========================================
-# AI 视频切片系统 (autoclip-windows) 依赖
+# AutoClip Dependencies
 # ========================================
 
-# Web 框架 (FastAPI)
+# Web Framework (FastAPI)
 anyio>=4.7.0
 fastapi==0.115.0
 uvicorn[standard]==0.32.0
 
-# 数据库
+# Database
 sqlalchemy==2.0.23
 alembic==1.13.0
 
-# 数据验证
+# Data Validation
 pydantic==2.11.0
 pydantic-settings==2.6.0
 
-# 环境变量
+# Environment Variables
 python-dotenv==1.0.0
 
-# 任务队列
+# Task Queue
 celery==5.3.4
 redis==5.0.1
 
-# 字幕处理
+# Subtitle Processing
 pysrt==1.1.2
 webvtt-py==0.5.1
 
-# 文本编码
+# Text Encoding
 chardet==5.2.0
 
-# 加密
+# Encryption
 cryptography==41.0.7
 
-# 图像处理
+# Image Processing
 Pillow==10.1.0
 
-# 文件上传
+# File Upload
 python-multipart==0.0.12
 
-# HTTP 客户端
+# HTTP Clients
 httpx==0.27.2
 
-# 视频处理
+# Video Processing
 ffmpeg-python>=0.2.0
 
-# 日志
+# Logging
 structlog>=24.1.0
 
-# 重试机制
+# Retry Mechanism
 tenacity>=8.2.3
 
 # ========================================
-# 注意事项
+# Notes
 # ========================================
-# 1. 语音识别组件 bcut-asr 已包含在 backend/bcut-asr 目录中
-#    无需从 PyPI 安装
+# 1. bcut-asr is included in backend/bcut-asr directory
+#    Install with: pip install -e backend/bcut-asr
 #
-# 2. 还需要安装以下外部依赖：
-#    - Redis 5.0+ (用于 Celery 任务队列)
-#    - FFmpeg 4.0+ (用于视频处理，需添加到系统 PATH)
-#    - Node.js 18.x+ (用于前端)
+# 2. External Dependencies Required:
+#    - Redis 5.0+ (for Celery task queue)
+#    - FFmpeg 4.0+ (for video processing, add to system PATH)
+#    - Node.js 18.x+ (for frontend)
 #
-# 3. Python 版本要求: 3.9+
+# 3. Python Version: 3.9+
