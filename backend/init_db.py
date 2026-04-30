@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 数据库初始化脚本
 创建数据库表并插入初始数据
 """
 
 import sys
+import io
 from pathlib import Path
+
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 from core.database import init_database, get_database_url
 from core.unified_config import get_data_directory

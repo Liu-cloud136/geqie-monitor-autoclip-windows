@@ -185,6 +185,11 @@ def test_connection() -> bool:
         print(f"数据库连接测试失败: {e}")
         return False
 
+def get_database_url() -> str:
+    """获取数据库URL（与 config.py 保持一致）"""
+    from .config import get_database_url as _get_database_url
+    return _get_database_url()
+
 # 数据库初始化
 def init_database():
     """初始化数据库"""
