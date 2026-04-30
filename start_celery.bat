@@ -1,8 +1,8 @@
 @echo off
 chcp 65001 >nul
 echo ========================================
-echo 鸽切监控 + AI 视频切片系统
-echo Celery 任务队列
+echo Geqie Monitor + AI Video Clip System
+echo Celery Task Queue
 echo ========================================
 echo.
 
@@ -12,31 +12,31 @@ set VENV_DIR=%PROJECT_DIR%venv
 cd /d "%PROJECT_DIR%backend"
 
 if not exist "%VENV_DIR%\Scripts\activate.bat" (
-    echo [错误] 虚拟环境未找到
-    echo 请先运行 install.bat 安装依赖
+    echo [ERROR] Virtual environment not found
+    echo Please run install.bat first to install dependencies
     pause
     exit /b 1
 )
 
-echo [正在激活] 虚拟环境...
+echo [Activating] Virtual environment...
 call "%VENV_DIR%\Scripts\activate.bat"
 
 echo.
-echo [正在创建] 日志目录...
+echo [Creating] Logs directory...
 if not exist "%PROJECT_DIR%logs" (
     mkdir "%PROJECT_DIR%logs"
-    echo [OK] 日志目录已创建
+    echo [OK] Logs directory created
 )
 
 echo.
-echo [正在启动] Celery Worker...
-echo 任务队列: processing, celery
-echo 并发数: 4
+echo [Starting] Celery Worker...
+echo Task Queues: processing, celery
+echo Concurrency: 4
 echo.
-echo 按 Ctrl+C 停止服务
+echo Press Ctrl+C to stop
 echo.
 echo ========================================
-echo 日志文件: %PROJECT_DIR%logs\celery_worker.log
+echo Log file: %PROJECT_DIR%logs\celery_worker.log
 echo ========================================
 echo.
 

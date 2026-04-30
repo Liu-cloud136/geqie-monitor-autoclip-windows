@@ -1,8 +1,8 @@
 @echo off
 chcp 65001 >nul
 echo ========================================
-echo 鸽切监控 + AI 视频切片系统
-echo FastAPI 后端服务
+echo Geqie Monitor + AI Video Clip System
+echo FastAPI Backend Service
 echo ========================================
 echo.
 
@@ -12,23 +12,23 @@ set VENV_DIR=%PROJECT_DIR%venv
 cd /d "%PROJECT_DIR%backend"
 
 if not exist "%VENV_DIR%\Scripts\activate.bat" (
-    echo [错误] 虚拟环境未找到
-    echo 请先运行 install.bat 安装依赖
-    echo 或手动执行: python -m venv venv ^&^& pip install -r requirements.txt
+    echo [ERROR] Virtual environment not found
+    echo Please run install.bat first to install dependencies
+    echo Or run manually: python -m venv venv ^&^& pip install -r requirements.txt
     pause
     exit /b 1
 )
 
-echo [正在激活] 虚拟环境...
+echo [Activating] Virtual environment...
 call "%VENV_DIR%\Scripts\activate.bat"
 
 echo.
-echo [正在启动] FastAPI 服务...
+echo [Starting] FastAPI Service...
 echo URL: http://localhost:8000
 echo API Docs: http://localhost:8000/docs
 echo API ReDoc: http://localhost:8000/redoc
 echo.
-echo 按 Ctrl+C 停止服务
+echo Press Ctrl+C to stop
 echo.
 
 uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4 --timeout-keep-alive 300 --limit-concurrency 1000
