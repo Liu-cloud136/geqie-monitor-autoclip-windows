@@ -1,0 +1,97 @@
+/* 鸽切监控系统 - CSS变量定义 */
+
+:root {
+    /* 主色调 */
+    --bilibili-pink: #fb7299;
+    --bilibili-blue: #00a1d6;
+    --bilibili-dark: #18191c;
+    --bilibili-gray: #f4f4f5;
+    --bilibili-text: #18191c;
+    --bilibili-text-light: #9499a0;
+    --bilibili-card-bg: #ffffff;
+    --bilibili-border: #e3e5e7;
+    --bilibili-success: #00b96b;
+    --bilibili-warning: #ff9500;
+    --bilibili-danger: #ff4d4f;
+
+    /* 通用颜色 */
+    --color-primary: #3b82f6;
+    --color-secondary: #6b7280;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+    --color-info: #3b82f6;
+
+    /* 文字颜色 */
+    --text-primary: #333;
+    --text-secondary: #666;
+    --text-muted: #9ca3af;
+    --text-light: #e5e7eb;
+
+    /* 背景颜色 */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-tertiary: #e5e7eb;
+
+    /* 边框颜色 */
+    --border-primary: #e5e7eb;
+    --border-secondary: #d1d5db;
+    --border-tertiary: #9ca3af;
+
+    /* 阴影 */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 15px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.2);
+    --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.3);
+
+    /* 圆角 */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+
+    /* 间距 */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+
+    /* 字体大小 */
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.25rem;
+    --text-2xl: 1.5rem;
+    --text-3xl: 1.875rem;
+    --text-4xl: 2.25rem;
+
+    /* 字体粗细 */
+    --font-light: 300;
+    --font-normal: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
+
+    /* 过渡动画 */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.3s ease;
+    --transition-slow: 0.5s ease;
+
+    /* z-index 层级 */
+    --z-dropdown: 1000;
+    --z-sticky: 1020;
+    --z-fixed: 1030;
+    --z-modal-backdrop: 1040;
+    --z-modal: 1050;
+    --z-popover: 1060;
+    --z-tooltip: 1070;
+    --z-toast: 1080;
+
+    /* 断点 */
+    --breakpoint-sm: 640px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 1024px;
+    --breakpoint-xl: 1280px;
+}

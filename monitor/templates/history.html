@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}历史数据查询 - 鸽切数据监控系统{% endblock %}
+
+{% block content %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="streamer-info">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <p class="mb-1 text-gray-600" id="room-title">加载中...</p>
+                        <small class="text-gray-400">
+                            房间号: <span id="room-id" class="text-gray-800">加载中...</span>
+                        </small>
+                    </div>
+                    <div class="col-auto">
+                        <span class="status-badge status-offline" id="stream-status">
+                            <span id="status-text">加载中...</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 标题栏 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>
+                    <span class="badge bg-gray-100 text-gray-600 fs-6" id="today-date"></span>
+                </h2>
+                <small class="text-muted" id="last-update">更新中...</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card stat-card-success">
+                <div class="stat-number" id="today-count">0</div>
+                <div class="stat-label">
+                    <i class="bi bi-calendar-check"></i> 今日鸽切
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card stat-card-primary">
+                <div class="stat-number" id="total-count">0</div>
+                <div class="stat-label">
+                    <i class="bi bi-graph-up"></i> 总鸽切次数
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card stat-card-warning">
+                <div class="stat-number" id="week-count">0</div>
+                <div class="stat-label">
+                    <i class="bi bi-calendar-week"></i> 本周鸽切
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card stat-card-secondary">
+                <div class="stat-number" id="top-user-count">0</div>
+                <div class="stat-label">
+                    <i class="bi bi-trophy"></i> 最活跃用户
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 历史数据查询 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clock-history"></i> 历史数据查询
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-12">
+                            <label for="history-date" class="form-label fw-bold">选择日期</label>
+                            <div class="input-group">
+                                <input type="date" id="history-date" class="form-control date-picker" onclick="this.showPicker()" max="{{ current_date }}">
+                                <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('history-date').showPicker()">
+                                    <i class="bi bi-calendar3"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted">点击输入框或日历图标选择日期</small>
+                        </div>
+                    </div>
+                    
+                    <!-- 历史数据表格 -->
+                    <div class="mt-4" id="history-data-container" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-hover data-table" id="history-data-table">
+                                <thead>
+                                    <tr>
+                                        <th class="table-header-center">用户名</th>
+                                        <th class="table-header-actions">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-data-body">
+                                    <!-- 历史数据将在这里动态加载 -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <small class="text-muted" id="history-total-count">共0条记录</small>
+                            <div class="btn-group" id="history-pagination">
+                                <!-- 分页按钮将在这里动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 趋势图表 -->
+    <div class="row mb-1">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">近7日鸽切趋势</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <!-- 导入模块化脚本 -->
+    <script src="{{ url_for('static', filename='js/today-data-manager.js') | static_hashed }}" defer></script>
+    <script src="{{ url_for('static', filename='js/history-data-manager.js') | static_hashed }}" defer></script>
+
+    <script defer>
+        // 页面加载完成后初始化历史数据管理器
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 初始化历史数据页面...');
+            
+            if (window.HistoryDataManager) {
+                window.HistoryDataManager.init();
+            } else {
+                console.error('HistoryDataManager 未找到');
+            }
+        });
+        
+        // 全局函数，用于历史数据页面的事件绑定
+        window.loadHistoryData = function() {
+            if (window.HistoryDataManager) {
+                window.HistoryDataManager.loadHistoryData();
+            }
+        };
+        
+        // 全局函数，用于显示不切原因
+        window.showReason = function(reason) {
+            alert(`不切原因：${reason}`);
+        };
+    </script>
+{% endblock %}

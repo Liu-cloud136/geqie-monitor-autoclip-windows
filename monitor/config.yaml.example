@@ -1,0 +1,132 @@
+# 鸽切数据监控系统配置文件示例
+# 复制此文件为 config.yaml 并修改相关配置
+
+# 应用配置
+app:
+  host: "0.0.0.0"
+  port: 5000
+  debug: false
+  database_path: "geqie_data.db"
+  timezone: "Asia/Shanghai"
+  admin_password: "your_password_here"  # 请修改为您的管理员密码
+  music_dir: "/app/song"  # 音乐文件目录
+  max_concurrent: 50  # 最大并发连接数
+
+# 公告配置
+announcement:
+  enable: true  # 是否启用公告
+  title: "欢迎访问鸽切监控系统"
+  content: "本系统用于监控B站直播间的鸽切弹幕，并提供数据查询和管理功能。如有问题请联系管理员。"
+  show_once: true  # 是否只显示一次（true=仅在localStorage记录时显示一次，false=每次都显示）
+
+# B站API配置
+bilibili:
+  room_id: 22391541  # 请修改为您的直播间ID（默认房间，向后兼容）
+  api_urls:
+    - "https://api.live.bilibili.com/room/v1/Room/get_info?id={room_id}"
+    - "https://api.live.bilibili.com/room/v1/Room/room_init?id={room_id}"
+  headers:
+    User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    Referer: "https://live.bilibili.com/{room_id}"
+    Origin: "https://live.bilibili.com"
+
+# 多房间监控配置（可选，启用后可同时监控多个直播间）
+multi_room:
+  enable: false  # 是否启用多房间监控
+  rooms:
+    # 房间配置示例 - 可以添加多个房间
+    # - room_id: 22391541    # 直播间ID
+    #   nickname: "主直播间"    # 房间昵称（用于前端显示）
+    #   enabled: true           # 是否启用该房间监控
+    # - room_id: 12345678
+    #   nickname: "副直播间"
+    #   enabled: true
+
+# 邮件配置（可选）
+email:
+  smtp_server: "smtp.qq.com"
+  smtp_port: 587
+  sender: "your_email@qq.com"  # 请修改为您的邮箱
+  password: "your_smtp_password"  # 请修改为QQ邮箱授权码
+  receiver: "your_email@qq.com"  # 接收邮箱，多个用逗号分隔，如：a@qq.com,b@qq.com
+  enable_live_start: true  # 开播邮件提醒
+  enable_live_end: true  # 关播邮件提醒
+  enable_monitor_start: true  # 监控开始提醒
+
+# B站登录凭证配置（可选）
+credential:
+  enable: false  # 是否启用登录凭证
+  sessdata: ""  # 如需启用，请填入您的SESSDATA
+  bili_jct: ""  # 如需启用，请填入您的bili_jct
+  buvid3: ""  # 如需启用，请填入您的buvid3
+
+# 监控配置
+monitor:
+  keyword: "鸽切"  # 监控关键词
+  email_cooldown: 1  # 邮件通知冷却时间（秒）
+  max_reconnect_attempts: 10  # 最大重连尝试次数
+  reconnect_delay: 30  # 重连延迟（秒）
+  heartbeat_timeout: 300  # 心跳超时时间（秒）
+
+# 在线聊天室配置
+chat:
+  enable: true  # 是否启用聊天室功能
+  max_messages: 100  # 最大历史消息数
+  max_message_length: 500  # 单条消息最大长度
+  max_username_length: 20  # 用户名最大长度
+
+  # 随机用户名生成配置
+  username:
+    adjectives: ["快乐", "开心", "可爱", "聪明", "勇敢", "温柔", "活泼", "机智", "帅气", "美丽"]
+    nouns: ["鸽子", "小鸟", "猫咪", "狗狗", "兔子", "熊猫", "老虎", "狮子", "海豚", "企鹅"]
+
+  # 敏感词过滤配置
+  filter:
+    enable: true  # 是否启用敏感词过滤
+    sensitive_words: ["敏感词1", "敏感词2", "敏感词3"]  # 敏感词列表
+    filter_action: "replace"  # 过滤动作：replace=替换为*, reject=直接拒绝, warn=警告并替换
+
+  # 禁言功能配置
+  mute:
+    enable: true  # 是否启用禁言功能
+    mute_duration: 3600  # 默认禁言时长（秒），默认1小时
+
+# ==================== 独立在线聊天室配置 ====================
+# 这是一个全新的、独立的在线聊天室系统，与上面的 chat 配置（留言板）完全分离
+# 特点：
+# - 实时WebSocket通信
+# - 随机用户名自动生成
+# - 显示发送者IP和时间（中国时区）
+# - 关键词过滤
+# - 管理员禁言/解禁功能
+# - 独立的消息存储
+
+live_chatroom:
+  enable: true  # 是否启用独立在线聊天室功能
+  max_messages: 200  # 最大历史消息数
+  max_message_length: 500  # 单条消息最大长度
+  max_username_length: 20  # 用户名最大长度
+
+  # 随机用户名生成配置
+  # 用户名格式：形容词 + 名词 + 随机数字（如：快乐鸽子123）
+  username:
+    adjectives: ["快乐", "开心", "可爱", "聪明", "勇敢", "温柔", "活泼", "机智", "帅气", "美丽", "优雅", "活泼", "聪明", "伶俐", "善良"]
+    nouns: ["鸽子", "小鸟", "猫咪", "狗狗", "兔子", "熊猫", "老虎", "海豚", "企鹅", "蝴蝶", "蜜蜂", "蜻蜓", "松鼠", "狐狸", "小熊"]
+
+  # 敏感词过滤配置
+  filter:
+    enable: true  # 是否启用敏感词过滤
+    sensitive_words: ["敏感词1", "敏感词2", "敏感词3"]  # 敏感词列表，支持中英文
+    filter_action: "replace"  # 过滤动作：
+                              #   replace = 将敏感词替换为*
+                              #   reject = 直接拒绝包含敏感词的消息
+                              #   warn = 记录日志并替换为*
+
+  # 禁言功能配置
+  mute:
+    enable: true  # 是否启用禁言功能
+    mute_duration: 3600  # 默认禁言时长（秒），默认1小时
+                          # 管理员可在禁言时自定义时长
+
+  # 时区设置（固定为中国时区，请勿修改）
+  timezone: "Asia/Shanghai"  # 所有时间均使用中国时区显示

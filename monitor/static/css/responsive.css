@@ -1,0 +1,567 @@
+/* 移动端响应式设计优化 */
+@media (max-width: 768px) {
+    .main-container {
+        margin: 0;
+        border-radius: 0;
+        min-height: 100vh;
+        border: none;
+        box-shadow: none;
+        width: 100%;
+        overflow-x: hidden;
+    }
+
+    .container {
+        padding-left: 15px;
+        padding-right: 15px;
+        max-width: 100%;
+        margin: 0 auto;
+    }
+
+    body {
+        overflow-x: hidden;
+        width: 100%;
+    }
+
+    .navbar {
+        padding: 0.75rem 0;
+        position: sticky;
+        top: 0;
+        z-index: 1020;
+        backdrop-filter: blur(10px);
+    }
+
+    .navbar-nav {
+        flex-direction: row;
+        justify-content: space-around;
+        width: 100%;
+        margin-top: 0.5rem;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .nav-link {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.5rem !important;
+        margin: 0 0.1rem;
+        text-align: center;
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+        box-sizing: border-box;
+    }
+
+    .nav-link i {
+        display: block;
+        margin-bottom: 0.2rem;
+        font-size: 1rem;
+    }
+
+    .navbar-brand {
+        font-size: 1rem;
+        text-align: center;
+        display: block;
+        width: 100%;
+    }
+
+    .stat-card {
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .stat-number {
+        font-size: 1.8rem;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+    }
+
+    h2 {
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+    }
+
+    .card {
+        margin-bottom: 1rem;
+        border-radius: 8px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .card-header {
+        padding: 0.75rem 1rem;
+        border-radius: 8px 8px 0 0 !important;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .card-title {
+        font-size: 1rem;
+        word-wrap: break-word;
+    }
+
+    .card-body {
+        padding: 1rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .table-responsive {
+        font-size: 0.8rem;
+        border-radius: 8px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+        margin: 0;
+    }
+
+    .data-table thead th,
+    .data-table tbody td {
+        padding: 0.6rem 0.5rem;
+        font-size: 0.75rem;
+        box-sizing: border-box;
+    }
+
+    .data-table {
+        min-width: auto;
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .data-table th,
+    .data-table td {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .btn {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
+        white-space: nowrap;
+    }
+
+    .btn-sm-compact {
+        font-size: 0.7rem;
+        padding: 0.3rem 0.4rem;
+    }
+
+    .badge {
+        font-size: 0.7rem;
+        padding: 0.3rem 0.5rem;
+    }
+
+    .streamer-info {
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    /* 移动端主播信息栏布局优化 */
+    .streamer-info .row {
+        margin-left: 0;
+        margin-right: 0;
+        flex-wrap: nowrap;
+        align-items: center;
+    }
+    
+    .streamer-info .col {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+    }
+    
+    .streamer-info .col-auto {
+        flex: 0 0 auto;
+        margin-left: 0.5rem;
+    }
+    
+    .streamer-info p {
+        margin-bottom: 0.3rem;
+        font-size: 0.9rem;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .streamer-info small {
+        font-size: 0.75rem;
+        line-height: 1.1;
+    }
+    
+    /* 移动端状态徽章优化 */
+    .status-badge {
+        padding: 0.25rem 0.6rem;
+        font-size: 0.75rem;
+        min-width: 60px;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .chart-container {
+        height: 200px;
+    }
+
+    .loading {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* 移动端表格优化 */
+    .data-table {
+        min-width: auto;
+        width: 100%;
+    }
+
+    .table-cell-center {
+        padding: 0.5rem 0.3rem;
+    }
+
+    /* 移动端表格单元格优化 */
+    .data-table tbody td {
+        min-width: auto;
+    }
+
+    /* 移动端表格列优化 */
+    .data-table .table-header-time {
+        width: 20% !important;
+        min-width: 70px !important;
+        max-width: 90px !important;
+        font-size: 0.8rem;
+    }
+
+    .data-table .table-header-actions {
+        width: 30% !important;
+        min-width: 100px !important;
+        max-width: 140px !important;
+    }
+
+    .data-table tbody td:nth-child(3) {
+        /* 时间列 */
+        min-width: 70px;
+        max-width: 90px;
+        font-size: 0.8rem;
+        white-space: normal;
+        word-break: break-all;
+        padding: 0.3rem 0.2rem;
+    }
+
+    .data-table tbody td:last-child {
+        /* 操作列 */
+        min-width: 100px;
+        max-width: 140px;
+        word-break: break-all;
+        white-space: normal;
+        padding: 0.3rem 0.2rem;
+    }
+
+    /* 移动端空数据单元格优化 */
+    .data-table tbody td.empty-data-cell {
+        min-width: auto !important;
+        max-width: none !important;
+        width: 100% !important;
+        padding: 1rem 0.5rem;
+    }
+
+    /* 移动端空数据单元格操作按钮优化 */
+    .data-table .btn-group {
+        flex-wrap: wrap;
+        gap: 0.2rem;
+    }
+
+    .data-table .btn-group .btn {
+        flex: 1;
+        min-width: 60px;
+    }
+
+    /* 移动端操作按钮容器优化 */
+    .data-table .d-flex.justify-content-center.gap-2 {
+        flex-wrap: wrap;
+        gap: 0.3rem !important;
+        justify-content: center !important;
+        align-items: center;
+    }
+
+    .data-table .d-flex.justify-content-center.gap-2 .btn {
+        flex: 0 0 auto;
+        min-width: 65px;
+        font-size: 0.65rem;
+        padding: 0.25rem 0.4rem;
+        margin: 0.1rem;
+    }
+
+    /* 移动端弹窗优化 */
+    .popup-container {
+        min-width: 320px;
+        max-width: 92vw;
+        margin: 0;
+        border-radius: 10px;
+        max-height: 85vh;
+        width: auto;
+    }
+
+    .popup-header {
+        flex-shrink: 0;
+    }
+
+    .popup-body {
+        max-height: 55vh;
+        font-size: 0.9rem;
+    }
+
+    .popup-footer {
+        flex-shrink: 0;
+    }
+
+    /* 超小屏幕弹窗优化 */
+    @media (max-width: 360px) {
+        .popup-container {
+            min-width: 280px;
+            max-width: 95vw;
+        }
+    }
+
+    .popup-header,
+    .popup-body,
+    .popup-footer {
+        padding: 0.75rem;
+    }
+
+    .popup-title {
+        font-size: 1rem;
+    }
+
+    .form-control {
+        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    /* 移动端不切原因显示优化 */
+    .skip-reason-text {
+        max-width: 160px;
+        font-size: 0.75rem;
+    }
+
+    /* 移动端触摸优化 */
+    .btn, .nav-link {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* 防止移动端缩放 */
+    input, select, textarea {
+        font-size: 16px !important;
+    }
+
+    /* 移动端用户名显示优化 */
+    .data-table tbody td:nth-child(2) {
+        max-width: 80px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        position: relative;
+    }
+    
+    /* 添加tooltip显示完整用户名 */
+    .data-table tbody td:nth-child(2):hover::after {
+        content: attr(data-username);
+        position: absolute;
+        top: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        white-space: nowrap;
+        z-index: 1000;
+    }
+
+    /* 移动端播放列表面板优化 */
+    #music-player .music-playlist-panel {
+        width: 100%;
+        right: 0;
+        bottom: 100%;
+        max-height: 150px;
+    }
+}
+
+/* 超小屏幕优化 */
+@media (max-width: 480px) {
+    .container {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    .nav-link {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.4rem !important;
+    }
+
+    .nav-link i {
+        font-size: 0.9rem;
+    }
+
+    .stat-number {
+        font-size: 1.6rem;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+    }
+
+    h2 {
+        font-size: 1.1rem;
+    }
+
+    .card-header {
+        padding: 0.6rem 0.8rem;
+    }
+
+    .table-responsive {
+        font-size: 0.75rem;
+    }
+
+    .data-table thead th,
+    .data-table tbody td {
+        padding: 0.5rem 0.4rem;
+        font-size: 0.7rem;
+    }
+
+    .btn {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.5rem;
+    }
+
+    .btn-sm-compact {
+        font-size: 0.65rem;
+        padding: 0.25rem 0.3rem;
+    }
+}
+
+/* 平板优化 */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .stat-number {
+        font-size: 2.3rem;
+    }
+
+    .chart-container {
+        height: 280px;
+    }
+}
+
+/* 超小屏幕按钮优化 */
+@media (max-width: 480px) {
+    .data-table .d-flex.justify-content-center.gap-2 {
+        gap: 0.2rem !important;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .data-table .d-flex.justify-content-center.gap-2 .btn {
+        min-width: 55px;
+        font-size: 0.6rem;
+        padding: 0.2rem 0.3rem;
+        margin: 0.05rem;
+        flex: 0 0 auto;
+    }
+}
+
+/* 极超小屏幕优化（320px以下设备） */
+@media (max-width: 360px) {
+    .data-table .d-flex.justify-content-center.gap-2 {
+        gap: 0.15rem !important;
+    }
+
+    .data-table .d-flex.justify-content-center.gap-2 .btn {
+        min-width: 50px;
+        font-size: 0.55rem;
+        padding: 0.15rem 0.25rem;
+        margin: 0.03rem;
+    }
+}
+
+/* 响应式弹窗优化 - 已在上面移动端部分定义，此处删除重复 */
+
+/* 音乐播放器响应式优化 */
+@media (max-width: 768px) {
+    .music-player-container {
+        width: 95% !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        bottom: 15px !important;
+        height: 65px !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+    }
+
+    #music-player .music-playlist-panel {
+        width: 100%;
+        right: 0;
+        bottom: 100%;
+        max-height: 150px;
+    }
+
+    .date-picker { font-size: 16px; }
+}
+
+@media (max-width: 480px) {
+    .music-player-container {
+        width: 96% !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        bottom: 12px !important;
+        height: 70px !important;
+        border-radius: 12px !important;
+    }
+}
+
+/* 迷你统计和倒计时移动端优化 */
+@media (max-width: 768px) {
+    .mini-stats {
+        font-size: 10px;
+    }
+
+    .mini-stats .badge {
+        font-size: 9px;
+        padding: 2px 4px;
+        min-width: 16px;
+    }
+
+    .mini-countdown {
+        padding: 3px 8px;
+        font-size: 10px;
+        min-width: 26px;
+    }
+
+    .mini-countdown #countdown {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .mini-stats {
+        font-size: 9px;
+    }
+
+    .mini-stats .badge {
+        font-size: 8px;
+        padding: 2px 3px;
+        min-width: 14px;
+    }
+
+    .mini-countdown {
+        padding: 2px 6px;
+        font-size: 9px;
+        min-width: 22px;
+    }
+
+    .mini-countdown #countdown {
+        font-size: 11px;
+    }
+}

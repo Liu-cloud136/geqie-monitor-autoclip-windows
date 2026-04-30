@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}咕咕咕？咕咕！{% endblock %}</title>
+    <!-- 第三方库（本地化） -->
+    <link href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') | static_hashed }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='vendor/bootstrap-icons/bootstrap-icons.min.css') | static_hashed }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/variables.css') | static_hashed }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/base.css') | static_hashed }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/layout.css') | static_hashed }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/components.css') | static_hashed }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/responsive.css') | static_hashed }}" rel="stylesheet">
+
+</head>
+<body>
+    <div class="main-container">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="/">
+                    <i class="bi bi-house-door-fill"></i> 鸽切监控系统
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/">
+                                <i class="bi bi-calendar-check"></i> 今日数据
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/multi-room">
+                                <i class="bi bi-house-dash"></i> 多房间监控
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/analysis">
+                                <i class="bi bi-bar-chart-fill"></i> 弹幕分析
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <div class="container py-4">
+            {% block content %}{% endblock %}
+        </div>
+
+        <footer class="mt-1 py-1">
+            <div class="container text-center">
+                <span class="text-muted">鸽切数据公示平台 v3.0 &copy; 2026</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 音乐播放器组件 -->
+    <div id="music-player" class="music-player music-player-container">
+        <div class="music-player-header music-player-header-styled">
+            <!-- 第一行：标题栏和歌曲信息 -->
+            <div class="d-flex justify-content-between align-items-center music-player-row">
+                <div class="d-flex align-items-center music-player-content">
+                    <!-- 固定的音乐符号 -->
+                    <i class="bi bi-music-note-beamed music-player-icon"></i>
+                    <!-- 歌曲信息容器 -->
+                    <div id="music-track-container" class="music-track-container">
+                        <div id="music-current-track" class="music-current-track">音乐</div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-1 music-player-controls">
+                    <!-- 播放模式按钮 -->
+                    <button class="btn btn-sm btn-light music-player-btn-light music-mode-btn" id="music-mode-btn" title="播放模式">
+                        <i class="bi bi-repeat"></i>
+                    </button>
+                    <!-- 喜欢按钮 -->
+                    <button class="btn btn-sm btn-light music-player-btn-light music-like-btn" id="music-like-btn" title="添加到喜欢">
+                        <i class="bi bi-heart"></i>
+                    </button>
+                    <!-- 播放列表按钮 -->
+                    <button class="btn btn-sm btn-light music-player-btn-light music-playlist-btn" id="music-playlist-btn" title="播放列表">
+                        <i class="bi bi-list-nested"></i>
+                    </button>
+                    <button class="btn btn-sm btn-light music-player-btn-light" id="music-prev-btn">
+                        <i class="bi bi-skip-backward"></i>
+                    </button>
+                    <button class="btn btn-sm btn-primary music-player-btn-primary" id="music-play-btn">
+                        <i class="bi bi-play-fill"></i>
+                    </button>
+                    <button class="btn btn-sm btn-light music-player-btn-light" id="music-next-btn">
+                        <i class="bi bi-skip-forward"></i>
+                    </button>
+                    <button class="btn btn-sm btn-light music-player-btn-light" id="music-volume-btn">
+                        <i class="bi bi-volume-up"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 第二行：进度条和时间 -->
+            <div class="music-player-progress-bar" id="music-progress-bar" style="display: none;">
+                <div class="music-progress-container">
+                    <div class="music-progress-track" id="music-progress">
+                        <div class="music-progress-fill" id="music-progress-fill"></div>
+                    </div>
+                    <div class="music-time-info">
+                        <span id="music-current-time">0:00</span> / <span id="music-total-time">0:00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 播放列表面板 -->
+        <div class="music-playlist-panel" id="music-playlist-panel" style="display: none;">
+            <!-- 播放列表标签页 -->
+            <div class="music-playlist-tabs">
+                <button class="music-playlist-tab active" data-tab="all">全部</button>
+                <button class="music-playlist-tab" data-tab="favorite">我喜欢</button>
+                <button class="music-playlist-tab" data-tab="import">导入歌单</button>
+            </div>
+
+            <!-- 全部歌曲列表 -->
+            <div class="music-playlist-content active" id="playlist-all">
+                <div class="music-playlist-header">
+                    <span>播放列表</span>
+                    <span id="music-list-count">0 首</span>
+                </div>
+                <div class="music-playlist-list" id="music-playlist">
+                    <!-- 动态生成歌曲列表 -->
+                </div>
+            </div>
+
+            <!-- 我喜欢的歌曲列表 -->
+            <div class="music-playlist-content" id="playlist-favorite">
+                <div class="music-playlist-header">
+                    <span><i class="bi bi-heart-fill me-1"></i>我喜欢</span>
+                    <span id="music-favorite-count">0 首</span>
+                </div>
+                <div class="music-playlist-list" id="music-favorite-list">
+                    <!-- 动态生成喜欢的歌曲列表 -->
+                </div>
+            </div>
+
+            <!-- 导入歌单 -->
+            <div class="music-playlist-content" id="playlist-import">
+                <div class="music-playlist-header">
+                    <span>导入歌单</span>
+                </div>
+                <div class="music-import-section">
+                    <div class="music-import-platforms">
+                        <button class="music-import-btn" data-platform="qqmusic">
+                            <i class="bi bi-music-note-beamed"></i> QQ音乐
+                        </button>
+                        <button class="music-import-btn" data-platform="netease">
+                            <i class="bi bi-cloud-music"></i> 网易云音乐
+                        </button>
+                    </div>
+                    <div class="music-import-input">
+                        <input type="text" id="music-import-url" placeholder="请输入歌单链接或ID">
+                        <button class="music-import-submit" id="music-import-submit">导入</button>
+                    </div>
+                    <div class="music-import-result" id="music-import-result" style="display: none;">
+                        <!-- 导入结果显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 留言板组件 -->
+    <div id="chat-box" class="chat-box-container">
+        <div class="chat-box-toggle" id="chat-toggle">
+            <i class="bi bi-card-text"></i>
+        </div>
+        <div class="chat-box-main" id="chat-main">
+            <div class="chat-box-header">
+                <div class="d-flex justify-content-between align-items-center w-100">
+                    <h6><i class="bi bi-card-text me-2"></i>留言板</h6>
+                    <div class="d-flex gap-2 align-items-center">
+                        <button class="chat-admin-btn" id="chat-admin-login" title="管理员登录" style="display: none;">
+                            <i class="bi bi-shield-lock"></i>
+                        </button>
+                        <button class="chat-box-close" id="chat-close">
+                            <i class="bi bi-dash-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-box-messages" id="chat-messages">
+                <div class="chat-welcome">
+                    <i class="bi bi-chat-quote"></i>
+                    <p>欢迎留言！</p>
+                    <small>请文明留言，遵守社区规范</small>
+                </div>
+            </div>
+            <div class="chat-box-input">
+                <input type="text" id="chat-title" placeholder="标题（可选）..." maxlength="50">
+                <input type="text" id="chat-input" placeholder="输入留言..." maxlength="500">
+                <button id="chat-send">
+                    <i class="bi bi-send-fill"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 独立在线聊天室组件 -->
+    <div id="live-chat-box" class="live-chat-container">
+        <div class="live-chat-toggle" id="live-chat-toggle">
+            <i class="bi bi-chat-dots-fill"></i>
+            <span class="live-chat-online-badge" id="live-chat-online-count">0</span>
+        </div>
+        <div class="live-chat-main" id="live-chat-main">
+            <div class="live-chat-header">
+                <div class="d-flex justify-content-between align-items-center w-100">
+                    <h6><i class="bi bi-chat-dots-fill me-2"></i>在线聊天室</h6>
+                    <div class="d-flex gap-2 align-items-center">
+                        <span class="live-chat-online-info">
+                            <i class="bi bi-people-fill me-1"></i>
+                            在线: <span id="live-chat-online-count-display">0</span>
+                        </span>
+                        <button class="live-chat-admin-btn" id="live-chat-admin-login" title="管理员登录">
+                            <i class="bi bi-shield-lock"></i>
+                        </button>
+                        <button class="live-chat-close" id="live-chat-close">
+                            <i class="bi bi-dash-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="live-chat-messages" id="live-chat-messages">
+                <div class="live-chat-welcome">
+                    <i class="bi bi-chat-dots"></i>
+                    <p>欢迎来到在线聊天室！</p>
+                    <small>用户名自动生成，支持实时聊天</small>
+                </div>
+            </div>
+            <div class="live-chat-input-area">
+                <input type="text" id="live-chat-input" placeholder="输入消息..." maxlength="500">
+                <button id="live-chat-send">
+                    <i class="bi bi-send-fill"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 第三方库（本地化，延迟加载） -->
+    <script src="{{ url_for('static', filename='vendor/bootstrap/bootstrap.bundle.min.js') | static_hashed }}" defer></script>
+    <script src="{{ url_for('static', filename='vendor/chartjs/chart.min.js') | static_hashed }}" defer></script>
+    <script src="{{ url_for('static', filename='vendor/socket.io/socket.io.min.js') | static_hashed }}" defer></script>
+
+    <!-- 核心模块（优先加载） -->
+    <script src="{{ url_for('static', filename='js/core.js') | static_hashed }}" defer></script>
+    <script src="{{ url_for('static', filename='js/config-manager.js') | static_hashed }}" defer></script>
+    <script src="{{ url_for('static', filename='js/modal-manager.js') | static_hashed }}" defer></script>
+
+    <!-- 数据管理器基类 -->
+    <script src="{{ url_for('static', filename='js/base-data-manager.js') | static_hashed }}" defer></script>
+
+    <!-- 功能模块 -->
+    <script src="{{ url_for('static', filename='js/utils.js') | static_hashed }}" defer></script>
+    <script src="{{ url_for('static', filename='js/auth-manager.js') | static_hashed }}" defer></script>
+    <script src="{{ url_for('static', filename='js/announcement-manager.js') | static_hashed }}" defer></script>
+    <script src="{{ url_for('static', filename='js/chart-manager.js') | static_hashed }}" defer></script>
+    <script src="{{ url_for('static', filename='js/data-table.js') | static_hashed }}" defer></script>
+    <script src="{{ url_for('static', filename='js/live-monitor.js') | static_hashed }}" defer></script>
+    <script src="{{ url_for('static', filename='js/app-controller.js') | static_hashed }}" defer></script>
+    <script src="{{ url_for('static', filename='js/music-player.js') | static_hashed }}" defer></script>
+    <script src="{{ url_for('static', filename='js/chat-manager.js') | static_hashed }}" defer></script>
+
+    <!-- 独立在线聊天室模块 -->
+    <script src="{{ url_for('static', filename='js/live-chatroom-manager.js') | static_hashed }}" defer></script>
+
+    <script defer>
+        // 主播信息缓存
+        const StreamerCache = {
+            cache: null,
+            cacheTime: 0,
+            cacheDuration: 5 * 60 * 1000, // 5分钟缓存
+
+            get: function() {
+                const now = Date.now();
+                if (this.cache && (now - this.cacheTime) < this.cacheDuration) {
+                    return this.cache;
+                }
+                return null;
+            },
+
+            set: function(data) {
+                this.cache = data;
+                this.cacheTime = Date.now();
+                // 同时保存到 localStorage
+                localStorage.setItem('streamerInfo', JSON.stringify(data));
+                localStorage.setItem('streamerInfoTime', this.cacheTime.toString());
+            },
+
+            loadFromStorage: function() {
+                const cached = localStorage.getItem('streamerInfo');
+                const cachedTime = localStorage.getItem('streamerInfoTime');
+                if (cached && cachedTime) {
+                    const now = Date.now();
+                    if ((now - parseInt(cachedTime)) < this.cacheDuration) {
+                        this.cache = JSON.parse(cached);
+                        this.cacheTime = parseInt(cachedTime);
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
+
+        // 初始化时尝试从 localStorage 加载
+        StreamerCache.loadFromStorage();
+
+        // 移动端优化（简化版）
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            document.body.classList.add('mobile-device');
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 导航栏高亮
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+                const href = link.getAttribute('href');
+                if (href === currentPath || (currentPath === '/' && href === '/')) {
+                    link.classList.add('active');
+                }
+            });
+
+            // 初始化认证模块
+            if (typeof AuthManager !== 'undefined') {
+                AuthManager.initAuth({ persistSession: true });
+            }
+
+            // 初始化公告管理器
+            if (typeof AnnouncementManager !== 'undefined') {
+                setTimeout(() => {
+                    const announcer = new AnnouncementManager();
+                    announcer.init();
+                    window.AnnouncementManagerInstance = announcer;
+
+                    // 暴露清除标记的方法（用于测试）
+                    window.clearAnnouncementMark = function() {
+                        localStorage.removeItem('geqie_announcement_shown');
+                        console.log('公告显示标记已清除，刷新页面将重新显示公告');
+                    };
+                }, 300);
+            }
+
+            // 初始化音乐播放器
+            if (typeof MusicPlayer !== 'undefined') {
+                setTimeout(() => MusicPlayer.init(), 500);
+            }
+
+            // 初始化聊天管理器
+            if (typeof ChatManager !== 'undefined') {
+                setTimeout(() => ChatManager.init(), 600);
+            }
+
+            // 初始化独立在线聊天室
+            if (typeof LiveChatroomManager !== 'undefined') {
+                setTimeout(() => LiveChatroomManager.init(), 700);
+            }
+
+            // 延迟初始化并发管理器（WebSocket），让首屏先完成
+            setTimeout(() => {
+                if (typeof ConcurrencyManager !== 'undefined') {
+                    ConcurrencyManager.init();
+                }
+            }, 1000);
+        });
+
+        // 并发管理器
+        const ConcurrencyManager = {
+            socket: null,
+            isConnected: false,
+            isWaiting: false,
+            queuePosition: 0,
+            reconnectAttempts: 0,
+            maxReconnectAttempts: 5,
+
+            init: function() {
+                try {
+                    // 初始化 Socket.IO - 添加更详细的错误处理
+                    this.socket = io({
+                        transports: ['websocket', 'polling'],
+                        reconnection: true,
+                        reconnectionAttempts: this.maxReconnectAttempts,
+                        reconnectionDelay: 1000,
+                        reconnectionDelayMax: 5000,
+                        randomizationFactor: 0.5,
+                        timeout: 10000
+                    });
+
+                    // 连接成功
+                    this.socket.on('connect', () => {
+                        console.log('✅ WebSocket 连接成功');
+                        this.isConnected = true;
+                        this.reconnectAttempts = 0;
+                    });
+
+                    // 连接错误
+                    this.socket.on('connect_error', (error) => {
+                        console.error('❌ WebSocket 连接错误:', error);
+                        this.reconnectAttempts++;
+                        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+                            console.warn('⚠️ 达到最大重连次数，停止重连');
+                        }
+                    });
+
+                    // 连接状态事件
+                    this.socket.on('connection_status', (data) => {
+                        console.log('📡 连接状态更新:', data);
+
+                        if (data.status === 'connected') {
+                            this.isConnected = true;
+                            this.isWaiting = false;
+                            this.queuePosition = 0;
+                            this.hideWaitingModal();
+                        } else if (data.status === 'waiting') {
+                            this.isConnected = false;
+                            this.isWaiting = true;
+                            this.queuePosition = data.queue_position;
+                            this.showWaitingModal(data.message, data.estimated_wait);
+                        }
+                    });
+
+                    // 队列位置更新
+                    this.socket.on('queue_status', (data) => {
+                        console.log('📊 队列状态:', data);
+
+                        if (data.status === 'waiting') {
+                            this.queuePosition = data.queue_position;
+                            this.updateWaitingModal(data.message, data.estimated_wait);
+                        } else if (data.status === 'connected') {
+                            this.isConnected = true;
+                            this.isWaiting = false;
+                            this.hideWaitingModal();
+                        }
+                    });
+
+                    // 队列统计更新
+                    this.socket.on('queue_stats', (data) => {
+                        console.log('📈 队列统计:', data);
+                        this.updateQueueStats(data);
+                    });
+
+                    // 连接断开
+                    this.socket.on('disconnect', () => {
+                        console.log('❌ WebSocket 断开连接');
+                        this.isConnected = false;
+                    });
+
+                    // 定期检查队列位置
+                    setInterval(() => {
+                        if (this.socket && this.socket.connected && this.isWaiting) {
+                            this.socket.emit('check_queue');
+                        }
+                    }, 5000);
+
+                } catch (error) {
+                    console.error('❌ 并发管理器初始化失败:', error);
+                }
+            },
+
+            showWaitingModal: function(message, estimatedWait) {
+                let modal = document.getElementById('waiting-modal');
+
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'waiting-modal';
+                    modal.className = 'waiting-modal';
+                    modal.innerHTML = `
+                        <div class="waiting-modal-content">
+                            <div class="waiting-spinner"></div>
+                            <h3>⏳ 服务器繁忙</h3>
+                            <p class="waiting-message">${message}</p>
+                            <p class="waiting-estimate">预计等待: <span id="wait-time">${estimatedWait}</span> 秒</p>
+                            <p class="waiting-hint">前面有空位时会自动进入</p>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                } else {
+                    const msgElement = modal.querySelector('.waiting-message');
+                    const estElement = modal.getElementById('wait-time');
+                    if (msgElement) msgElement.textContent = message;
+                    if (estElement) estElement.textContent = estimatedWait;
+                }
+
+                modal.style.display = 'flex';
+            },
+
+            updateWaitingModal: function(message, estimatedWait) {
+                const modal = document.getElementById('waiting-modal');
+                if (modal) {
+                    const msgElement = modal.querySelector('.waiting-message');
+                    const estElement = modal.getElementById('wait-time');
+                    if (msgElement) msgElement.textContent = message;
+                    if (estElement) estElement.textContent = estimatedWait;
+                }
+            },
+
+            hideWaitingModal: function() {
+                const modal = document.getElementById('waiting-modal');
+                if (modal) {
+                    modal.style.display = 'none';
+                }
+            },
+
+            updateQueueStats: function(data) {
+                // 更新页面上的在线人数统计
+                const onlineUsers = document.getElementById('online-users');
+                const waitingUsers = document.getElementById('waiting-users');
+                const maxUsers = document.getElementById('max-users');
+
+                if (onlineUsers) onlineUsers.textContent = data.active;
+                if (waitingUsers) waitingUsers.textContent = data.waiting;
+                if (maxUsers) maxUsers.textContent = data.max_concurrent;
+            }
+        };
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

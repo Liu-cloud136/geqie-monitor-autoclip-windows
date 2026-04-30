@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}并发队列测试{% endblock %}
+
+{% block content %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">🚦 并发队列测试页面</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading">ℹ️ 功能说明</h5>
+                        <p class="mb-0">当前系统最大并发连接数为 <strong>50</strong>。当超过此限制时，新连接会自动进入排队等待状态。</p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">📊 当前状态</h5>
+                                    <div id="status-display">
+                                        <p><strong>连接状态:</strong> <span id="connection-status" class="badge bg-secondary">未连接</span></p>
+                                        <p><strong>队列位置:</strong> <span id="queue-position">-</span></p>
+                                        <p><strong>预计等待:</strong> <span id="estimated-wait">-</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">👥 服务器统计</h5>
+                                    <div id="server-stats">
+                                        <p><strong>当前在线:</strong> <span id="active-users" class="badge bg-success">-</span></p>
+                                        <p><strong>等待队列:</strong> <span id="waiting-users" class="badge bg-warning">-</span></p>
+                                        <p><strong>最大并发:</strong> <span id="max-concurrent">50</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button class="btn btn-primary" onclick="testConnection()">🔄 测试连接</button>
+                        <button class="btn btn-info ms-2" onclick="checkQueue()">📍 检查队列位置</button>
+                    </div>
+
+                    <div class="mt-4">
+                        <h6>📝 连接日志</h6>
+                        <div id="connection-log" class="bg-dark text-light p-3 rounded" style="height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        let logCount = 0;
+
+        function addLog(message) {
+            const log = document.getElementById('connection-log');
+            const timestamp = new Date().toLocaleTimeString();
+            log.innerHTML += `[${timestamp}] ${message}<br>`;
+            log.scrollTop = log.scrollHeight;
+            logCount++;
+
+            // 限制日志数量
+            if (logCount > 100) {
+                const lines = log.innerHTML.split('<br>');
+                log.innerHTML = lines.slice(-50).join('<br>');
+                logCount = 50;
+            }
+        }
+
+        function testConnection() {
+            addLog('🔄 开始测试连接...');
+            if (window.ConcurrencyManager && window.ConcurrencyManager.socket) {
+                if (window.ConcurrencyManager.socket.connected) {
+                    addLog('✅ WebSocket 已连接');
+                    window.ConcurrencyManager.socket.emit('check_queue');
+                } else {
+                    addLog('⏳ WebSocket 正在连接...');
+                }
+            } else {
+                addLog('❌ ConcurrencyManager 未初始化');
+            }
+        }
+
+        function checkQueue() {
+            addLog('📍 检查队列位置...');
+            if (window.ConcurrencyManager && window.ConcurrencyManager.socket) {
+                window.ConcurrencyManager.socket.emit('check_queue');
+            } else {
+                addLog('❌ ConcurrencyManager 未初始化');
+            }
+        }
+
+        // 覆盖 ConcurrencyManager 的方法以显示更多日志
+        document.addEventListener('DOMContentLoaded', function() {
+            // 监听 Socket.IO 事件
+            if (window.io) {
+                const socket = io();
+
+                socket.on('connect', () => {
+                    addLog('✅ WebSocket 连接成功');
+                    document.getElementById('connection-status').textContent = '已连接';
+                    document.getElementById('connection-status').className = 'badge bg-success';
+                });
+
+                socket.on('disconnect', () => {
+                    addLog('❌ WebSocket 断开连接');
+                    document.getElementById('connection-status').textContent = '已断开';
+                    document.getElementById('connection-status').className = 'badge bg-danger';
+                });
+
+                socket.on('connection_status', (data) => {
+                    addLog(`📡 连接状态: ${data.status} - ${data.message}`);
+                    if (data.status === 'waiting') {
+                        document.getElementById('connection-status').textContent = '等待中';
+                        document.getElementById('connection-status').className = 'badge bg-warning';
+                        document.getElementById('queue-position').textContent = data.queue_position;
+                        document.getElementById('estimated-wait').textContent = data.estimated_wait + ' 秒';
+                    } else if (data.status === 'connected') {
+                        document.getElementById('connection-status').textContent = '已连接';
+                        document.getElementById('connection-status').className = 'badge bg-success';
+                        document.getElementById('queue-position').textContent = '-';
+                        document.getElementById('estimated-wait').textContent = '-';
+                    }
+                });
+
+                socket.on('queue_status', (data) => {
+                    addLog(`📊 队列状态: ${data.status} - 位置 ${data.queue_position}`);
+                    if (data.status === 'waiting') {
+                        document.getElementById('queue-position').textContent = data.queue_position;
+                        document.getElementById('estimated-wait').textContent = data.estimated_wait + ' 秒';
+                    } else if (data.status === 'connected') {
+                        document.getElementById('queue-position').textContent = '-';
+                        document.getElementById('estimated-wait').textContent = '-';
+                    }
+                });
+
+                socket.on('queue_stats', (data) => {
+                    addLog(`📈 服务器统计: ${data.active}/${data.max_concurrent} 在线, ${data.waiting} 等待中`);
+                    document.getElementById('active-users').textContent = data.active;
+                    document.getElementById('waiting-users').textContent = data.waiting;
+                    document.getElementById('max-concurrent').textContent = data.max_concurrent;
+                });
+            }
+
+            addLog('🚀 页面加载完成');
+        });
+    </script>
+{% endblock %}

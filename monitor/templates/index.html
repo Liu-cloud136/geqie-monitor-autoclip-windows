@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}咕咕咕？咕咕！{% endblock %}
+
+{% block content %}
+    <div class="row mb-4">
+    <div class="col-12">
+        <div class="streamer-info">
+            <div class="row align-items-center">
+                <div class="col">
+                    <p class="mb-1 text-gray-600" id="room-title">加载中...</p>
+                    <small class="text-gray-400">
+                        房间号: <span id="room-id" class="text-gray-800">加载中...</span>
+                    </small>
+                </div>
+                <div class="col-auto">
+                    <span class="status-badge status-offline" id="stream-status">
+                        <span id="status-text">加载中...</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- 标题栏 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>
+                    <span class="badge bg-gray-100 text-gray-600 fs-6" id="today-date"></span>
+                </h2>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="mini-stats">
+                        <small class="text-muted">
+                            在线: <span id="online-users" class="badge bg-success">-</span>
+                        </small>
+                        <small class="text-muted ms-2">
+                            等待: <span id="waiting-users" class="badge bg-warning">-</span>
+                        </small>
+                    </div>
+                    <div class="mini-countdown">
+                        <span id="countdown">10</span>s
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card stat-card-success">
+                <div class="stat-number" id="today-count">0</div>
+                <div class="stat-label">
+                    <i class="bi bi-calendar-check"></i> 今日鸽切
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card stat-card-primary">
+                <div class="stat-number" id="total-count">0</div>
+                <div class="stat-label">
+                    <i class="bi bi-graph-up"></i> 总鸽切次数
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card stat-card-warning">
+                <div class="stat-number" id="week-count">0</div>
+                <div class="stat-label">
+                    <i class="bi bi-calendar-week"></i> 本周鸽切
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card stat-card-secondary">
+                <div class="stat-number" id="top-user-count">0</div>
+                <div class="stat-label">
+                    <i class="bi bi-trophy"></i> 最活跃用户
+                </div>
+            </div>
+        </div>
+    </div>
+
+<div class="row">
+    <!-- 左侧：今日记录 -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-chat-dots"></i> 今日记录
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive data-table-container">
+                    <table class="table data-table mb-0">
+                        <thead>
+                            <tr>
+                                <th class="table-header-center" style="width: 120px;">评分</th>
+                                <th class="table-header-center">用户</th>
+                                <th class="table-header-actions">操作 <span id="admin-badge" class="badge bg-secondary ms-2 d-none">管理员</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="data-list">
+                            <tr>
+                                <td colspan="3" class="loading-state">
+                                    <div class="loading mx-auto mb-2"></div>
+                                    <p class="mb-0">正在加载数据...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 右侧：用户统计和系统信息 -->
+    <div class="col-lg-4">
+        <!-- 最活跃用户 -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-trophy"></i> 活跃用户榜
+                    <small class="text-white-50 ms-1">TOP 5</small>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="top-users">
+                    <div class="text-center py-3">
+                        <div class="loading mx-auto mb-2"></div>
+                        <p class="text-muted mb-0">加载中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 实时统计 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-speedometer2"></i> 实时统计
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <div class="mb-3">
+                        <div class="h4 text-success mb-1" id="today-avg">--</div>
+                        <small class="text-muted">今日平均</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- 历史数据 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clock-history"></i> 历史数据查询
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-12">
+                            <label for="history-date" class="form-label fw-bold">选择日期</label>
+                            <div class="input-group">
+                                <input type="date" id="history-date" class="form-control date-picker" onchange="loadHistoryData()" onclick="this.showPicker()" max="{{ current_date }}">
+                                <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('history-date').showPicker()">
+                                    <i class="bi bi-calendar3"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted">点击输入框或日历图标选择日期</small>
+                        </div>
+                    </div>
+                    
+                    <!-- 历史数据表格 -->
+                    <div class="mt-4" id="history-data-container" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-hover data-table" id="history-data-table">
+                                <thead>
+                                    <tr>
+                                        <th class="table-header-center" style="width: 120px;">评分</th>
+                                        <th class="table-header-center">用户名</th>
+                                        <th class="table-header-actions">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-data-body">
+                                    <!-- 历史数据将在这里动态加载 -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <small class="text-muted" id="history-total-count">共0条记录</small>
+                            <div class="btn-group" id="history-pagination">
+                                <!-- 分页按钮将在这里动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 趋势图表 -->
+    <div class="row mb-1">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">近7日鸽切趋势</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <!-- 导入模块化脚本 -->
+    <script src="{{ url_for('static', filename='js/today-data-manager.js') | static_hashed }}" defer></script>
+    <script src="{{ url_for('static', filename='js/history-data-manager.js') | static_hashed }}" defer></script>
+
+    <script defer>
+        // 初始化页面管理器
+        document.addEventListener('DOMContentLoaded', function() {
+            // index.html 是今日数据页面，直接初始化 TodayDataManager
+            if (window.TodayDataManager) {
+                window.TodayDataManager.init();
+            }
+        });
+
+        // 全局函数，用于历史数据页面的事件绑定
+        window.loadHistoryData = function() {
+            if (window.HistoryDataManager) {
+                window.HistoryDataManager.loadHistoryData();
+            }
+        };
+        
+        // 全局函数，用于显示不切原因
+        window.showReason = function(reason) {
+            alert(`不切原因：${reason}`);
+        };
+        
+        // 全局函数，用于切换编辑标签页（兼容内联事件）
+        window.switchEditTab = function(tabType) {
+            if (window.TodayDataManager && window.TodayDataManager.switchEditTab) {
+                window.TodayDataManager.switchEditTab(tabType);
+            } else {
+                console.warn('TodayDataManager.switchEditTab 未找到');
+            }
+        };
+    </script>
+{% endblock %}

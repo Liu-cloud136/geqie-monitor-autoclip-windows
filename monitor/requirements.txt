@@ -1,0 +1,45 @@
+# 鸽切监控系统依赖 - 基于镜像实际版本
+# 从镜像 geqie-monitor-arm64-fast-4.tar 中提取的实际依赖版本
+
+# Web框架
+Flask==3.1.2
+Flask-Compress==1.23
+Flask-SocketIO==5.4.1
+python-socketio==5.11.4
+python-engineio==4.13.0
+
+# B站API
+bilibili-api-python==17.4.1
+
+# 数据处理
+PyYAML==6.0.3
+pytz==2025.2
+requests==2.32.5
+
+# Flask依赖
+Werkzeug==3.1.5
+Jinja2==3.1.6
+MarkupSafe==3.0.3
+
+# 其他依赖
+aiohttp==3.13.3
+apscheduler==3.11.2
+beautifulsoup4==4.14.3
+blinker==1.9.0
+certifi==2026.1.4
+colorama==0.4.6
+
+# 中文NLP库（用于弹幕情感分析、词云生成）
+snownlp==0.12.3
+jieba==0.42.1
+wordcloud==1.9.3
+
+# 数据导出功能依赖
+# Excel导出
+openpyxl>=3.1.0
+# PDF导出
+reportlab>=4.0.0
+
+# Python版本要求
+# 镜像环境: Python 3.9
+# 建议使用: Python >= 3.9

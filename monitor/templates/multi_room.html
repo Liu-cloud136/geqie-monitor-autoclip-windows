@@ -1,0 +1,1196 @@
+{% extends "base.html" %}
+
+{% block title %}多房间监控 - 鸽切监控系统{% endblock %}
+
+{% block content %}
+    <!-- 页面标题和控制栏 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>
+                    <i class="bi bi-house-dash text-primary"></i> 
+                    多房间监控中心
+                </h2>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="switchView('overview')" id="btn-overview">
+                            <i class="bi bi-grid"></i> 概览
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="switchView('comparison')" id="btn-comparison">
+                            <i class="bi bi-bar-chart"></i> 对比分析
+                        </button>
+                    </div>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="refreshAllData()">
+                        <i class="bi bi-arrow-clockwise"></i> 刷新
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="showExportModal()">
+                        <i class="bi bi-download"></i> 导出数据
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 全局统计卡片 -->
+    <div class="row mb-4" id="global-stats">
+        <div class="col-md-3">
+            <div class="stat-card stat-card-primary">
+                <div class="stat-number" id="total-rooms">0</div>
+                <div class="stat-label">
+                    <i class="bi bi-house"></i> 监控房间数
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card stat-card-success">
+                <div class="stat-number" id="active-rooms">0</div>
+                <div class="stat-label">
+                    <i class="bi bi-camera-video"></i> 直播中房间
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card stat-card-warning">
+                <div class="stat-number" id="total-danmaku">0</div>
+                <div class="stat-label">
+                    <i class="bi bi-chat-dots"></i> 总弹幕数
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card stat-card-info">
+                <div class="stat-number" id="total-keywords">0</div>
+                <div class="stat-label">
+                    <i class="bi bi-key"></i> 关键词匹配
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 概览视图 -->
+    <div id="overview-view">
+        <!-- 房间列表卡片 -->
+        <div class="row mb-4" id="rooms-overview">
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <div class="loading mx-auto mb-2"></div>
+                    <p class="text-muted mb-0">加载房间数据中...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 房间详情区域（点击房间后显示） -->
+        <div class="row" id="room-detail-section" style="display: none;">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-bar-chart"></i> 
+                            <span id="detail-room-name">房间详情</span> - 详细数据
+                        </h5>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="hideRoomDetail()">
+                            <i class="bi bi-x"></i> 关闭
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <!-- 房间统计卡片 -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="stat-card stat-card-success">
+                                    <div class="stat-number" id="detail-today-count">0</div>
+                                    <div class="stat-label">今日数据</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card stat-card-primary">
+                                    <div class="stat-number" id="detail-week-count">0</div>
+                                    <div class="stat-label">本周数据</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card stat-card-warning">
+                                    <div class="stat-number" id="detail-total-count">0</div>
+                                    <div class="stat-label">总计数据</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card stat-card-info">
+                                    <div class="stat-number" id="detail-live-status">-</div>
+                                    <div class="stat-label">直播状态</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 趋势图表 -->
+                        <div class="row mb-4">
+                            <div class="col-lg-8">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0"><i class="bi bi-graph-up"></i> 近7日趋势</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="chart-container" style="height: 250px;">
+                                            <canvas id="detail-trend-chart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0"><i class="bi bi-trophy"></i> 活跃用户 TOP 5</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="detail-top-users">
+                                            <div class="text-center py-3 text-muted">
+                                                暂无数据
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 今日数据表格 -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0"><i class="bi bi-table"></i> 今日数据记录</h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="width: 120px;">时间</th>
+                                                <th>用户</th>
+                                                <th>内容</th>
+                                                <th style="width: 80px;">评分</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="detail-today-table">
+                                            <tr>
+                                                <td colspan="4" class="text-center py-4 text-muted">
+                                                    暂无今日数据
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 对比分析视图 -->
+    <div id="comparison-view" style="display: none;">
+        <!-- 时间范围选择 -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body py-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-primary btn-sm comparison-days-btn" data-days="7">
+                                    近7天
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm comparison-days-btn" data-days="14">
+                                    近14天
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm comparison-days-btn" data-days="30">
+                                    近30天
+                                </button>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <small class="text-muted">对比指标:</small>
+                                <select class="form-select form-select-sm" id="comparison-metric" style="width: auto;" onchange="updateComparisonChart()">
+                                    <option value="count">数据量对比</option>
+                                    <option value="keyword_ratio">关键词占比</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 对比图表 -->
+        <div class="row mb-4">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-bar-chart"></i> 房间数据对比
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="comparison-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-key"></i> 热门关键词 TOP 20
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="comparison-keywords">
+                            <div class="text-center py-3">
+                                <div class="loading mx-auto mb-2"></div>
+                                <p class="text-muted mb-0">加载中...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 关键词按房间分布 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-pie-chart"></i> 关键词按房间分布
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="room-keywords-distribution">
+                            <div class="text-center py-5">
+                                <div class="loading mx-auto mb-2"></div>
+                                <p class="text-muted mb-0">加载中...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 对比数据表格 -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-table"></i> 详细对比数据
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>房间</th>
+                                        <th class="text-center">今日数据</th>
+                                        <th class="text-center">本周数据</th>
+                                        <th class="text-center">总计数据</th>
+                                        <th class="text-center">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="comparison-table">
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4 text-muted">
+                                            <div class="loading mx-auto mb-2"></div>
+                                            加载中...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导出数据模态框 -->
+    <style>
+        /* 确保导出模态框在最顶层 */
+        #export-modal {
+            z-index: 10000 !important;
+        }
+        /* Bootstrap 动态生成的遮罩层 */
+        #export-modal ~ .modal-backdrop,
+        .modal-backdrop.show {
+            z-index: 9999 !important;
+        }
+        /* 防止 waiting-modal 遮挡 */
+        #waiting-modal {
+            z-index: 9998 !important;
+        }
+        /* 确保模态框内容可点击 */
+        #export-modal .modal-dialog {
+            z-index: 10001 !important;
+        }
+    </style>
+    <div class="modal fade" id="export-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-download"></i> 数据导出
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- 导出格式选择 -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">导出格式</h6>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="export-format" id="format-excel" value="excel" checked>
+                            <label class="btn btn-outline-primary" for="format-excel">
+                                <i class="bi bi-file-earmark-excel"></i> Excel (.xlsx)
+                            </label>
+                            <input type="radio" class="btn-check" name="export-format" id="format-csv" value="csv">
+                            <label class="btn btn-outline-secondary" for="format-csv">
+                                <i class="bi bi-file-earmark-text"></i> CSV (.csv)
+                            </label>
+                            <input type="radio" class="btn-check" name="export-format" id="format-pdf" value="pdf">
+                            <label class="btn btn-outline-danger" for="format-pdf">
+                                <i class="bi bi-file-earmark-pdf"></i> PDF (.pdf)
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 房间选择 -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">选择房间</h6>
+                        <div class="mb-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="select-all-rooms" checked>
+                                <label class="form-check-label" for="select-all-rooms">
+                                    <strong>全选所有房间</strong>
+                                </label>
+                            </div>
+                        </div>
+                        <div id="room-selection-list">
+                            <!-- 房间列表将动态生成 -->
+                        </div>
+                    </div>
+
+                    <!-- 时间范围 -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">时间范围</h6>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <select class="form-select" id="export-date-range">
+                                    <option value="today">今天</option>
+                                    <option value="7days" selected>最近7天</option>
+                                    <option value="14days">最近14天</option>
+                                    <option value="30days">最近30天</option>
+                                    <option value="all">全部数据</option>
+                                    <option value="custom">自定义...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3" id="custom-start-date" style="display: none;">
+                                <label class="form-label small mb-1">开始日期</label>
+                                <input type="date" class="form-control" id="export-start-date">
+                            </div>
+                            <div class="col-md-3" id="custom-end-date" style="display: none;">
+                                <label class="form-label small mb-1">结束日期</label>
+                                <input type="date" class="form-control" id="export-end-date">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 数据指标选择 -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">选择数据指标</h6>
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="metric-basic" checked>
+                                    <label class="form-check-label" for="metric-basic">
+                                        基础数据（用户、内容、时间）
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="metric-rating" checked>
+                                    <label class="form-check-label" for="metric-rating">
+                                        评分数据
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="metric-room" checked>
+                                    <label class="form-check-label" for="metric-room">
+                                        房间信息
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="metric-charts" checked>
+                                    <label class="form-check-label" for="metric-charts">
+                                        图表（仅PDF）
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="metric-stats" checked>
+                                    <label class="form-check-label" for="metric-stats">
+                                        统计摘要
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 报表模板选择（仅PDF） -->
+                    <div class="mb-4" id="pdf-template-section" style="display: none;">
+                        <h6 class="mb-3">PDF报表模板</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card template-card selected" data-template="standard">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-file-earmark-text" style="font-size: 2rem;"></i>
+                                        <h6 class="mt-2 mb-0">标准模板</h6>
+                                        <small class="text-muted">数据表格 + 统计摘要</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card template-card" data-template="visual">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-bar-chart" style="font-size: 2rem; color: #0d6efd;"></i>
+                                        <h6 class="mt-2 mb-0">可视化模板</h6>
+                                        <small class="text-muted">图表 + 趋势分析</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card template-card" data-template="full">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-file-earmark-pdf" style="font-size: 2rem; color: #dc3545;"></i>
+                                        <h6 class="mt-2 mb-0">完整报告</h6>
+                                        <small class="text-muted">全部内容 + 详细分析</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="executeExport()">
+                        <i class="bi bi-download"></i> 导出数据
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        // 全局变量
+        let currentView = 'overview';
+        let selectedRoomId = null;
+        let comparisonDays = 7;
+        let detailTrendChart = null;
+        let comparisonChart = null;
+        let selectedTemplate = 'standard';
+        
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置默认日期
+            const today = new Date().toISOString().split('T')[0];
+            const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            document.getElementById('export-start-date').value = lastWeek;
+            document.getElementById('export-end-date').value = today;
+            
+            // 加载数据
+            loadAllData();
+            
+            // 绑定事件
+            bindEvents();
+        });
+        
+        function bindEvents() {
+            // 时间范围选择
+            document.getElementById('export-date-range').addEventListener('change', function() {
+                const showCustom = this.value === 'custom';
+                document.getElementById('custom-start-date').style.display = showCustom ? 'block' : 'none';
+                document.getElementById('custom-end-date').style.display = showCustom ? 'block' : 'none';
+            });
+            
+            // 导出格式切换
+            document.querySelectorAll('input[name="export-format"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const pdfSection = document.getElementById('pdf-template-section');
+                    if (this.value === 'pdf') {
+                        pdfSection.style.display = 'block';
+                    } else {
+                        pdfSection.style.display = 'none';
+                    }
+                });
+            });
+            
+            // 模板选择
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedTemplate = this.dataset.template;
+                });
+            });
+            
+            // 全选房间
+            document.getElementById('select-all-rooms').addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('#room-selection-list .room-checkbox');
+                checkboxes.forEach(cb => cb.checked = this.checked);
+            });
+        }
+        
+        // 切换视图
+        function switchView(view) {
+            currentView = view;
+            
+            // 更新按钮状态
+            document.getElementById('btn-overview').className = view === 'overview' ? 
+                'btn btn-primary btn-sm' : 'btn btn-outline-secondary btn-sm';
+            document.getElementById('btn-comparison').className = view === 'comparison' ? 
+                'btn btn-primary btn-sm' : 'btn btn-outline-secondary btn-sm';
+            
+            // 显示/隐藏视图
+            document.getElementById('overview-view').style.display = view === 'overview' ? 'block' : 'none';
+            document.getElementById('comparison-view').style.display = view === 'comparison' ? 'block' : 'none';
+            
+            // 加载对应数据
+            if (view === 'comparison') {
+                loadComparisonData();
+            }
+        }
+        
+        // 加载所有数据
+        async function loadAllData() {
+            try {
+                // 加载全局统计
+                await loadGlobalStats();
+                
+                // 加载房间概览
+                await loadRoomsOverview();
+                
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                if (window.Core && window.Core.showNotification) {
+                    window.Core.showNotification('加载数据失败: ' + error.message, 'error');
+                }
+            }
+        }
+        
+        // 加载全局统计
+        async function loadGlobalStats() {
+            try {
+                const response = await fetch('/api/multi-room/status');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    
+                    document.getElementById('total-rooms').textContent = data.rooms.length || 0;
+                    document.getElementById('active-rooms').textContent = data.global_stats.active_rooms || 0;
+                    document.getElementById('total-danmaku').textContent = data.global_stats.total_danmaku || 0;
+                    document.getElementById('total-keywords').textContent = data.global_stats.total_keyword_matches || 0;
+                    
+                    // 缓存房间数据
+                    window.cachedRooms = data.rooms;
+                    
+                    // 更新房间选择列表
+                    updateRoomSelectionList(data.rooms);
+                }
+            } catch (error) {
+                console.error('加载全局统计失败:', error);
+            }
+        }
+        
+        // 更新房间选择列表
+        function updateRoomSelectionList(rooms) {
+            const container = document.getElementById('room-selection-list');
+            if (!rooms || rooms.length === 0) {
+                container.innerHTML = '<p class="text-muted">暂无可用房间</p>';
+                return;
+            }
+            
+            container.innerHTML = rooms.map(room => `
+                <div class="form-check">
+                    <input class="form-check-input room-checkbox" type="checkbox" 
+                           id="room-${room.room_id}" value="${room.room_id}" checked>
+                    <label class="form-check-label" for="room-${room.room_id}">
+                        ${room.nickname || `直播间 ${room.room_id}`}
+                        <span class="badge ${room.is_live ? 'bg-success' : 'bg-secondary'} ms-2">
+                            ${room.is_live ? '直播中' : '未开播'}
+                        </span>
+                    </label>
+                </div>
+            `).join('');
+        }
+        
+        // 加载房间概览
+        async function loadRoomsOverview() {
+            try {
+                const response = await fetch('/api/multi-room/status');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const rooms = result.data.rooms;
+                    const container = document.getElementById('rooms-overview');
+                    
+                    if (rooms.length === 0) {
+                        container.innerHTML = `
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-body text-center py-5">
+                                        <i class="bi bi-house-dash text-muted" style="font-size: 3rem;"></i>
+                                        <h5 class="mt-3 text-muted">暂未配置多房间监控</h5>
+                                        <p class="text-muted">请在配置文件中启用多房间监控功能</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    container.innerHTML = rooms.map(room => `
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card room-card ${room.is_live ? 'border-success' : ''}" 
+                                 onclick="showRoomDetail(${room.room_id})"
+                                 style="cursor: pointer;">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="card-title mb-0">
+                                        <i class="bi ${room.is_live ? 'bi-camera-video-fill text-success' : 'bi-camera-video text-muted'}"></i>
+                                        ${room.nickname || `直播间 ${room.room_id}`}
+                                    </h6>
+                                    <span class="badge ${room.is_live ? 'bg-success' : 'bg-secondary'}">
+                                        ${room.is_live ? '直播中' : '未开播'}
+                                    </span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <div class="h5 mb-0 text-primary">${room.db_today_count || 0}</div>
+                                            <small class="text-muted">今日数据</small>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="h5 mb-0 text-info">${room.db_week_count || 0}</div>
+                                            <small class="text-muted">本周数据</small>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="h5 mb-0 text-secondary">${room.keyword_count || 0}</div>
+                                            <small class="text-muted">关键词</small>
+                                        </div>
+                                    </div>
+                                    ${room.room_title ? `
+                                        <div class="mt-3 pt-3 border-top">
+                                            <small class="text-muted">直播间标题:</small>
+                                            <p class="mb-0 text-truncate" title="${room.room_title}">${room.room_title}</p>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('加载房间概览失败:', error);
+            }
+        }
+        
+        // 显示房间详情
+        async function showRoomDetail(roomId) {
+            selectedRoomId = roomId;
+            
+            try {
+                // 显示详情区域
+                document.getElementById('room-detail-section').style.display = 'block';
+                
+                // 获取房间信息
+                const rooms = window.cachedRooms || [];
+                const room = rooms.find(r => r.room_id === roomId);
+                
+                if (room) {
+                    document.getElementById('detail-room-name').textContent = room.nickname || `直播间 ${roomId}`;
+                    document.getElementById('detail-today-count').textContent = room.db_today_count || 0;
+                    document.getElementById('detail-week-count').textContent = room.db_week_count || 0;
+                    document.getElementById('detail-total-count').textContent = room.db_total_count || 0;
+                    document.getElementById('detail-live-status').textContent = room.is_live ? '直播中' : '未开播';
+                }
+                
+                // 加载详细数据
+                await loadRoomDetailData(roomId);
+                
+            } catch (error) {
+                console.error('加载房间详情失败:', error);
+            }
+        }
+        
+        // 加载房间详细数据
+        async function loadRoomDetailData(roomId) {
+            try {
+                // 获取统计数据
+                const statsResponse = await fetch(`/api/multi-room/${roomId}/stats?days=7`);
+                const statsResult = await statsResponse.json();
+                
+                if (statsResult.success) {
+                    const stats = statsResult.room_stats;
+                    
+                    // 更新活跃用户
+                    const topUsersContainer = document.getElementById('detail-top-users');
+                    if (stats.top_users && stats.top_users.length > 0) {
+                        topUsersContainer.innerHTML = stats.top_users.map((user, idx) => `
+                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <div class="d-flex align-items-center">
+                                    <span class="badge ${idx === 0 ? 'bg-warning' : idx === 1 ? 'bg-secondary' : idx === 2 ? 'bg-info' : 'bg-light text-dark'} me-2">
+                                        ${idx + 1}
+                                    </span>
+                                    <span>${user.username}</span>
+                                </div>
+                                <span class="text-primary fw-bold">${user.count}次</span>
+                            </div>
+                        `).join('');
+                    } else {
+                        topUsersContainer.innerHTML = '<div class="text-center py-3 text-muted">暂无活跃用户数据</div>';
+                    }
+                    
+                    // 更新趋势图表
+                    updateDetailTrendChart(stats.daily_stats);
+                }
+                
+                // 获取今日数据
+                const todayResponse = await fetch(`/api/multi-room/${roomId}/today`);
+                const todayResult = await todayResponse.json();
+                
+                if (todayResult.success) {
+                    const tbody = document.getElementById('detail-today-table');
+                    if (todayResult.data && todayResult.data.length > 0) {
+                        tbody.innerHTML = todayResult.data.slice(0, 20).map(item => `
+                            <tr>
+                                <td>${item.time_display || '-'}</td>
+                                <td>${item.username || '未知用户'}</td>
+                                <td class="text-truncate" style="max-width: 300px;" title="${item.content || ''}">${item.content || '-'}</td>
+                                <td>${item.rating || 0}分</td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">暂无今日数据</td></tr>';
+                    }
+                }
+                
+            } catch (error) {
+                console.error('加载房间详细数据失败:', error);
+            }
+        }
+        
+        // 更新详情趋势图表
+        function updateDetailTrendChart(dailyStats) {
+            const ctx = document.getElementById('detail-trend-chart').getContext('2d');
+            
+            if (detailTrendChart) {
+                detailTrendChart.destroy();
+            }
+            
+            // 按日期排序（升序）
+            const sortedStats = [...(dailyStats || [])].sort((a, b) => a.date.localeCompare(b.date));
+            
+            detailTrendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sortedStats.map(s => s.date),
+                    datasets: [{
+                        label: '数据量',
+                        data: sortedStats.map(s => s.count),
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 隐藏房间详情
+        function hideRoomDetail() {
+            document.getElementById('room-detail-section').style.display = 'none';
+            selectedRoomId = null;
+        }
+        
+        // 加载对比数据
+        async function loadComparisonData() {
+            try {
+                const response = await fetch(`/api/multi-room/comparison?days=${comparisonDays}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    // 更新对比图表
+                    updateComparisonChart(result.comparison_data);
+                    
+                    // 更新关键词
+                    updateComparisonKeywords(result.keyword_frequency);
+                    
+                    // 更新对比表格
+                    updateComparisonTable(result.comparison_data);
+                    
+                    // 更新关键词分布
+                    updateKeywordDistribution(result.keyword_frequency);
+                }
+            } catch (error) {
+                console.error('加载对比数据失败:', error);
+            }
+        }
+        
+        // 更新对比图表
+        function updateComparisonChart(comparisonData) {
+            const ctx = document.getElementById('comparison-chart').getContext('2d');
+            
+            if (comparisonChart) {
+                comparisonChart.destroy();
+            }
+            
+            const data = comparisonData.comparison_data || [];
+            const metric = document.getElementById('comparison-metric').value;
+            
+            const colors = [
+                '#0d6efd', '#198754', '#ffc107', '#dc3545', 
+                '#6f42c1', '#0dcaf0', '#fd7e14', '#20c997'
+            ];
+            
+            comparisonChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.room_title || `直播间 ${d.room_id}`),
+                    datasets: [{
+                        label: metric === 'count' ? '数据量' : '关键词占比',
+                        data: data.map(d => metric === 'count' ? d.total_count : (d.keyword_ratio * 100)),
+                        backgroundColor: data.map((_, i) => colors[i % colors.length]),
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: metric === 'count' ? '数据量' : '占比 (%)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 更新关键词显示
+        function updateComparisonKeywords(keywordData) {
+            const container = document.getElementById('comparison-keywords');
+            const keywords = keywordData.all_keywords || [];
+            
+            if (keywords.length === 0) {
+                container.innerHTML = '<div class="text-center py-3 text-muted">暂无关键词数据</div>';
+                return;
+            }
+            
+            // 计算最大数量用于百分比
+            const maxCount = keywords[0].count;
+            
+            container.innerHTML = keywords.slice(0, 20).map((kw, idx) => `
+                <div class="d-flex align-items-center py-2 border-bottom">
+                    <span class="badge bg-secondary me-2" style="width: 30px; text-align: center;">${idx + 1}</span>
+                    <div class="flex-grow-1 me-2">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>${kw.keyword}</span>
+                            <span class="text-primary fw-bold">${kw.count}次</span>
+                        </div>
+                        <div class="progress" style="height: 4px;">
+                            <div class="progress-bar bg-primary" style="width: ${(kw.count / maxCount * 100)}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 更新关键词分布
+        function updateKeywordDistribution(keywordData) {
+            const container = document.getElementById('room-keywords-distribution');
+            const roomKeywords = keywordData.room_keywords || [];
+            
+            if (roomKeywords.length === 0) {
+                container.innerHTML = '<div class="text-center py-5 text-muted">暂无房间关键词数据</div>';
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="row">
+                    ${roomKeywords.map(room => `
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">
+                                        <i class="bi bi-key"></i> ${room.room_title || `直播间 ${room.room_id}`}
+                                        <span class="badge bg-info ms-2">${room.total_danmaku}条</span>
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    ${room.keywords && room.keywords.length > 0 ? 
+                                        room.keywords.slice(0, 10).map(kw => `
+                                            <span class="badge bg-light text-dark me-2 mb-2">
+                                                ${kw.keyword} <span class="text-primary">×${kw.count}</span>
+                                            </span>
+                                        `).join('') :
+                                        '<span class="text-muted">暂无关键词数据</span>'
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        // 更新对比表格
+        function updateComparisonTable(comparisonData) {
+            const data = comparisonData.comparison_data || [];
+            const tbody = document.getElementById('comparison-table');
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">暂无对比数据</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = data.map(room => `
+                <tr>
+                    <td>
+                        <strong>${room.room_title || `直播间 ${room.room_id}`}</strong>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge bg-primary">${room.daily_data ? room.daily_data.filter(d => {
+                            const today = new Date().toISOString().split('T')[0];
+                            return d.date === today;
+                        }).reduce((sum, d) => sum + d.count, 0) : 0}</span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge bg-info">${room.total_count}</span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge bg-secondary">${room.total_count}</span>
+                    </td>
+                    <td class="text-center">
+                        <button class="btn btn-outline-primary btn-sm" onclick="showRoomDetail(${room.room_id}); switchView('overview');">
+                            <i class="bi bi-eye"></i> 查看详情
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // 刷新所有数据
+        function refreshAllData() {
+            loadAllData();
+            if (currentView === 'comparison') {
+                loadComparisonData();
+            }
+        }
+        
+        // 显示导出模态框
+        let exportModalInstance = null;
+        
+        function showExportModal() {
+            // 先清除所有可能存在的遮罩层
+            clearAllBackdrops();
+            
+            // 获取模态框元素
+            const modalElement = document.getElementById('export-modal');
+            
+            // 如果已存在实例，先销毁
+            if (exportModalInstance) {
+                try {
+                    exportModalInstance.hide();
+                    exportModalInstance.dispose();
+                } catch (e) {
+                    // 忽略错误
+                }
+            }
+            
+            // 创建新的模态框实例
+            exportModalInstance = new bootstrap.Modal(modalElement, {
+                backdrop: 'static',  // 点击遮罩不关闭
+                keyboard: true        // 按 ESC 关闭
+            });
+            
+            exportModalInstance.show();
+        }
+        
+        // 清除所有遮罩层
+        function clearAllBackdrops() {
+            // 移除所有 modal-backdrop
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => {
+                backdrop.remove();
+            });
+            
+            // 移除 body 上的 modal-open 类
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }
+        
+        // 执行导出
+        async function executeExport() {
+            try {
+                // 获取导出参数
+                const format = document.querySelector('input[name="export-format"]:checked').value;
+                
+                // 获取选中的房间
+                const selectedRooms = [];
+                document.querySelectorAll('#room-selection-list .room-checkbox:checked').forEach(cb => {
+                    selectedRooms.push(parseInt(cb.value));
+                });
+                
+                if (selectedRooms.length === 0) {
+                    if (window.Core && window.Core.showNotification) {
+                        window.Core.showNotification('请至少选择一个房间', 'warning');
+                    }
+                    return;
+                }
+                
+                // 获取时间范围
+                const dateRange = document.getElementById('export-date-range').value;
+                let startDate, endDate;
+                
+                if (dateRange === 'custom') {
+                    startDate = document.getElementById('export-start-date').value;
+                    endDate = document.getElementById('export-end-date').value;
+                }
+                
+                // 获取选中的指标
+                const metrics = {
+                    basic: document.getElementById('metric-basic').checked,
+                    rating: document.getElementById('metric-rating').checked,
+                    room: document.getElementById('metric-room').checked,
+                    charts: document.getElementById('metric-charts').checked,
+                    stats: document.getElementById('metric-stats').checked
+                };
+                
+                // 构建请求参数
+                const params = new URLSearchParams({
+                    format: format,
+                    rooms: selectedRooms.join(','),
+                    date_range: dateRange,
+                    template: selectedTemplate
+                });
+                
+                if (startDate) params.append('start_date', startDate);
+                if (endDate) params.append('end_date', endDate);
+                
+                // 添加指标参数
+                Object.keys(metrics).forEach(key => {
+                    if (metrics[key]) {
+                        params.append(`metric_${key}`, 'true');
+                    }
+                });
+                
+                // 显示加载提示
+                if (window.Core && window.Core.showLoading) {
+                    window.Core.showLoading('正在生成导出文件...');
+                }
+                
+                // 发起下载请求
+                const response = await fetch(`/api/export/data?${params.toString()}`);
+                
+                if (window.Core && window.Core.hideLoading) {
+                    window.Core.hideLoading();
+                }
+                
+                if (response.ok) {
+                    // 获取文件名
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = `export_${Date.now()}.${format === 'excel' ? 'xlsx' : format}`;
+                    
+                    if (contentDisposition) {
+                        const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                        if (match && match[1]) {
+                            filename = match[1].replace(/['"]/g, '');
+                        }
+                    }
+                    
+                    // 下载文件
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    if (window.Core && window.Core.showNotification) {
+                        window.Core.showNotification('导出成功！', 'success');
+                    }
+                    
+                    // 关闭模态框
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('export-modal'));
+                    if (modal) modal.hide();
+                    
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '导出失败');
+                }
+                
+            } catch (error) {
+                console.error('导出失败:', error);
+                if (window.Core && window.Core.hideLoading) {
+                    window.Core.hideLoading();
+                }
+                if (window.Core && window.Core.showNotification) {
+                    window.Core.showNotification('导出失败: ' + error.message, 'error');
+                }
+            }
+        }
+        
+        // 暴露全局函数
+        window.switchView = switchView;
+        window.refreshAllData = refreshAllData;
+        window.showRoomDetail = showRoomDetail;
+        window.hideRoomDetail = hideRoomDetail;
+        window.showExportModal = showExportModal;
+        window.executeExport = executeExport;
+        window.updateComparisonChart = function() {
+            if (window.cachedComparisonData) {
+                updateComparisonChart(window.cachedComparisonData);
+            } else {
+                loadComparisonData();
+            }
+        };
+    </script>
+{% endblock %}

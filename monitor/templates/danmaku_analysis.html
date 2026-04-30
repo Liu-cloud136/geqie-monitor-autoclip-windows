@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}弹幕分析 - 鸽切监控系统{% endblock %}
+
+{% block content %}
+    <!-- 页面标题 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>
+                    <i class="bi bi-bar-chart-fill text-primary"></i> 
+                    弹幕实时分析
+                </h2>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="mini-stats">
+                        <small class="text-muted">
+                            已分析: <span id="analyzed-count" class="badge bg-info">0</span> 条弹幕
+                        </small>
+                    </div>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="refreshAnalysis()">
+                        <i class="bi bi-arrow-clockwise"></i> 刷新
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="clearAnalysisData()" id="clear-btn" style="display: none;">
+                        <i class="bi bi-trash"></i> 清空数据
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 时间窗口选择器 -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-primary btn-sm time-window-btn" data-window="300">
+                                5分钟
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm time-window-btn" data-window="1800">
+                                30分钟
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm time-window-btn" data-window="3600">
+                                1小时
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm time-window-btn" data-window="0">
+                                全部
+                            </button>
+                        </div>
+                        <small class="text-muted">
+                            自动刷新: <span id="auto-refresh-status" class="text-success">开启</span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 情感分析概览 -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card stat-card-success">
+                <div class="stat-number" id="positive-count">0</div>
+                <div class="stat-label">
+                    <i class="bi bi-emoji-smile"></i> 正面弹幕
+                </div>
+                <div class="progress mt-2" style="height: 4px;">
+                    <div class="progress-bar bg-success" id="positive-bar" style="width: 0%;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card stat-card-secondary">
+                <div class="stat-number" id="neutral-count">0</div>
+                <div class="stat-label">
+                    <i class="bi bi-emoji-neutral"></i> 中性弹幕
+                </div>
+                <div class="progress mt-2" style="height: 4px;">
+                    <div class="progress-bar bg-secondary" id="neutral-bar" style="width: 0%;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card stat-card-warning">
+                <div class="stat-number" id="negative-count">0</div>
+                <div class="stat-label">
+                    <i class="bi bi-emoji-frown"></i> 负面弹幕
+                </div>
+                <div class="progress mt-2" style="height: 4px;">
+                    <div class="progress-bar bg-warning" id="negative-bar" style="width: 0%;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card stat-card-primary">
+                <div class="stat-number" id="avg-sentiment">--</div>
+                <div class="stat-label">
+                    <i class="bi bi-heart"></i> 平均情感指数
+                </div>
+                <div class="progress mt-2" style="height: 4px;">
+                    <div class="progress-bar bg-primary" id="sentiment-bar" style="width: 50%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主要内容区域 -->
+    <div class="row">
+        <!-- 左侧：词云 + 热门话题 -->
+        <div class="col-lg-6">
+            <!-- 弹幕词云 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-cloud"></i> 弹幕词云
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="wordcloud-container" class="wordcloud-container">
+                        <div class="text-center py-5 text-muted">
+                            <div class="loading mx-auto mb-2"></div>
+                            <p class="mb-0">等待弹幕数据...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 热门话题 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-fire"></i> 热门话题
+                        <span class="badge bg-danger ms-2">实时</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="hot-topics">
+                        <div class="text-center py-3">
+                            <div class="loading mx-auto mb-2"></div>
+                            <p class="text-muted mb-0">加载中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：活跃用户 + 可疑行为 -->
+        <div class="col-lg-6">
+            <!-- 活跃用户分析 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-people-fill"></i> 活跃用户分析
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>用户</th>
+                                    <th class="text-center">弹幕数</th>
+                                    <th class="text-center">正面</th>
+                                    <th class="text-center">负面</th>
+                                    <th class="text-center">重复率</th>
+                                </tr>
+                            </thead>
+                            <tbody id="active-users-table">
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        <div class="loading mx-auto mb-2"></div>
+                                        加载中...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 可疑行为检测 -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> 可疑行为检测
+                        <span id="suspicious-badge" class="badge bg-danger ms-2">0</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="suspicious-users">
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                            <p class="mt-2 mb-0">暂无可疑行为</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 重复弹幕统计 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-files"></i> 重复弹幕统计
+                        <span class="badge bg-info ms-2">TOP 20</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 50px;">排名</th>
+                                    <th>弹幕内容</th>
+                                    <th class="text-center" style="width: 100px;">重复次数</th>
+                                    <th class="text-center" style="width: 100px;">情感倾向</th>
+                                    <th class="text-center" style="width: 150px;">主要发送者</th>
+                                    <th class="text-center" style="width: 120px;">时间跨度</th>
+                                </tr>
+                            </thead>
+                            <tbody id="duplicate-table">
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">
+                                        <div class="loading mx-auto mb-2"></div>
+                                        加载中...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 实时弹幕流 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-chat-left-text"></i> 实时弹幕分析流
+                        <span class="badge bg-primary ms-2">Live</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="realtime-danmaku" class="realtime-danmaku-container">
+                        <div class="text-center py-3 text-muted">
+                            <p class="mb-0">等待实时弹幕...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/danmaku-analysis.js') | static_hashed }}" defer></script>
+{% endblock %}

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API测试</title>
+</head>
+<body>
+    <h1>API测试页面</h1>
+    <div id="result"></div>
+
+    <script>
+        const projectId = 'e72a4e54-83a8-4385-b873-c796cf0142f0';
+
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>正在测试API...</p>';
+
+            try {
+                // 测试后端直接访问
+                const response1 = await fetch(`http://localhost:8000/api/v1/projects/${projectId}?include_clips=true`);
+                const data1 = await response1.json();
+                console.log('后端直接访问结果:', data1);
+
+                resultDiv.innerHTML += `
+                    <h2>✅ 后端API (localhost:8000)</h2>
+                    <p>项目名称: ${data1.name}</p>
+                    <p>项目状态: ${data1.status}</p>
+                    <p>clips字段存在: ${'clips' in data1 && data1.clips !== null}</p>
+                    <p>clips数量: ${data1.clips ? data1.clips.length : 0}</p>
+                    <pre>${JSON.stringify(data1.clips, null, 2)}</pre>
+                `;
+
+                // 测试通过前端代理访问
+                const response2 = await fetch(`/api/v1/projects/${projectId}?include_clips=true`);
+                const data2 = await response2.json();
+                console.log('前端代理访问结果:', data2);
+
+                resultDiv.innerHTML += `
+                    <h2>✅ 前端代理访问 (通过vite代理)</h2>
+                    <p>项目名称: ${data2.name}</p>
+                    <p>项目状态: ${data2.status}</p>
+                    <p>clips字段存在: ${'clips' in data2 && data2.clips !== null}</p>
+                    <p>clips数量: ${data2.clips ? data2.clips.length : 0}</p>
+                `;
+
+            } catch (error) {
+                console.error('API调用失败:', error);
+                resultDiv.innerHTML += `<p style="color: red;">❌ API调用失败: ${error.message}</p>`;
+            }
+        }
+
+        testAPI();
+    </script>
+</body>
+</html>

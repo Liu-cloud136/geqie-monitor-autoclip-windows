@@ -1,0 +1,37 @@
+"""
+任务模块
+包含所有异步任务定义
+"""
+
+from .processing import *
+from .video import *
+from .notification import *
+from .maintenance import *
+from .data_cleanup import *  # 添加数据清理任务导入
+
+__all__ = [
+    # 处理任务
+    'process_video_pipeline',
+    'process_single_step',
+    'retry_processing_step',
+    
+    # 视频任务
+    'extract_video_clips',
+
+    'optimize_video_quality',
+    
+    # 通知任务
+    'send_processing_notification',
+    'send_error_notification',
+    'send_completion_notification',
+    
+    # 维护任务
+    'cleanup_expired_tasks',
+    'health_check',
+    'backup_project_data',
+    
+    # 数据清理任务
+    'cleanup_expired_data',
+    'check_data_consistency',
+    'cleanup_orphaned_data'
+] 

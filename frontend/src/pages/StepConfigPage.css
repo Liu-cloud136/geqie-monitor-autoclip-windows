@@ -1,0 +1,232 @@
+/* 步骤配置页面样式 */
+
+.step-config-card {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.step-config-card:hover {
+  border-color: #1890ff;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+}
+
+.step-config-card .ant-card-head {
+  background-color: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.step-config-card .ant-card-head-title {
+  font-weight: 500;
+}
+
+.step-config-card .ant-divider {
+  margin: 16px 0;
+}
+
+.step-config-card .ant-slider {
+  margin: 8px 0;
+}
+
+/* 状态标签样式 */
+.step-config-card .ant-tag {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* 表单样式 */
+.step-config-card .ant-form-item {
+  margin-bottom: 16px;
+}
+
+.step-config-card .ant-form-item-label {
+  font-weight: 500;
+}
+
+/* 参数配置网格 */
+.step-config-card .ant-row {
+  margin-bottom: 8px;
+}
+
+/* 高级选项区域 */
+.step-config-card .advanced-options {
+  background-color: #fafafa;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+  border: 1px solid #e8e8e8;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .step-config-card .ant-col {
+    margin-bottom: 16px;
+  }
+  
+  .step-config-card .ant-row {
+    margin-bottom: 0;
+  }
+}
+
+/* 标签页样式 */
+.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
+  border-radius: 8px 8px 0 0;
+  background: #fafafa;
+  border-color: #f0f0f0;
+  margin-right: 8px;
+}
+
+.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab-active {
+  background: #fff;
+  border-bottom-color: #fff;
+}
+
+.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab:hover {
+  color: #1890ff;
+}
+
+/* 统计卡片样式 */
+.stat-card {
+  text-align: center;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card .ant-typography {
+  margin-bottom: 8px;
+}
+
+/* 操作按钮样式 */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-buttons .ant-btn {
+  border-radius: 6px;
+}
+
+/* 加载状态 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.loading-container .ant-spin {
+  margin-bottom: 16px;
+}
+
+/* 提示信息 */
+.config-hint {
+  background-color: #e6f7ff;
+  border: 1px solid #91d5ff;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.config-hint .anticon {
+  color: #1890ff;
+  margin-right: 8px;
+}
+
+/* 禁用状态的样式 */
+.step-config-card.disabled {
+  opacity: 0.7;
+  background-color: #fafafa;
+}
+
+.step-config-card.disabled:hover {
+  border-color: #f0f0f0;
+  box-shadow: none;
+}
+
+/* 标签页图标样式 */
+.ant-tabs-tab .anticon {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+/* 自定义提示词区域 */
+.custom-prompt-area {
+  background-color: #f8f9fa;
+  border: 1px dashed #d9d9d9;
+  border-radius: 4px;
+  padding: 12px;
+  margin-top: 8px;
+}
+
+.custom-prompt-area .ant-input-textarea {
+  background-color: #fff;
+}
+
+/* 模型选择器 */
+.model-selector .ant-select-selector {
+  border-radius: 6px;
+}
+
+.model-selector .ant-select-arrow {
+  color: #bfbfbf;
+}
+
+/* 滑块标签 */
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.slider-label .ant-typography {
+  margin-bottom: 0;
+}
+
+/* 响应式表格样式 */
+.responsive-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* 卡片组样式 */
+.card-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .card-group {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.step-config-card {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* 标签页内容动画 */
+.ant-tabs-tabpane-active {
+  animation: fadeIn 0.3s ease-out;
+}
