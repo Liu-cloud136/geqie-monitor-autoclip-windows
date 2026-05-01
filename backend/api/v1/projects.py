@@ -345,8 +345,12 @@ async def get_project(
             clips_data = [clip.to_dict() if hasattr(clip, 'to_dict') else clip.__dict__ for clip in clips]
             db.close()
         
-        # 创建包含clips的响应数据
-        response_data = project.model_dump() if hasattr(project, 'model_dump') else project.__dict__
+        # get_project_with_stats 返回的是字典，直接使用
+        if isinstance(project, dict):
+            response_data = project.copy()
+        else:
+            response_data = project.model_dump() if hasattr(project, 'model_dump') else project.__dict__
+        
         if clips_data is not None:
             response_data['clips'] = clips_data
         
@@ -355,6 +359,7 @@ async def get_project(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"获取项目 {project_id} 失败: {str(e)}", exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
 
 
