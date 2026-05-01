@@ -164,4 +164,5 @@ auto_clip:
   # 视频源配置（可选）
   # 如果配置了视频源路径，将从已有的视频文件中提取切片
   # 如果未配置，则使用模拟模式（仅记录切片请求，不实际执行切片）
-  video_source_path: ""  # 例如："D:\\recordings\\live.mp4" 或 "/app/recordings/live.mp4
+  # 注意：Windows 路径请使用正斜杠 / 或双反斜杠 \\
+  video_source_path: ""  # 例如："D:/recordings/live.mp4" 或 "/app/recordings/live.mp4"
