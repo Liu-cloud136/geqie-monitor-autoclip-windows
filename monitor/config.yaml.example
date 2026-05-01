@@ -130,3 +130,38 @@ live_chatroom:
 
   # 时区设置（固定为中国时区，请勿修改）
   timezone: "Asia/Shanghai"  # 所有时间均使用中国时区显示
+
+# ==================== 自动切片配置 ====================
+# 当弹幕监控识别到关键词时自动触发视频切片
+# 特点：
+# - 弹幕关键词匹配时自动创建切片请求
+# - 支持前置/后置缓冲时间
+# - 支持切片队列和并发控制
+# - 支持冷却时间和去重机制
+
+auto_clip:
+  enable_auto_clip: true  # 是否启用自动切片功能
+  
+  # 切片时间配置
+  pre_buffer_seconds: 30.0  # 弹幕触发前的缓冲时间（秒），包含切片前的精彩内容
+  post_buffer_seconds: 30.0  # 弹幕触发后的缓冲时间（秒），包含切片后的精彩内容
+  
+  # 队列和并发控制
+  max_concurrent_clips: 3  # 最大同时处理的切片数量
+  clip_queue_size: 100  # 切片请求队列最大长度
+  
+  # 输出配置
+  video_output_dir: "auto_clips"  # 切片输出目录（相对于工作目录）
+  
+  # 通知配置
+  enable_clip_notification: true  # 是否启用切片完成通知
+  
+  # 冷却和去重配置
+  clip_cooldown_seconds: 60.0  # 切片冷却时间（秒），避免短时间内重复切片
+  deduplication_window_seconds: 120.0  # 去重窗口（秒），相同关键词在此时间内只触发一次切片
+  enable_deduplication: true  # 是否启用去重机制
+  
+  # 视频源配置（可选）
+  # 如果配置了视频源路径，将从已有的视频文件中提取切片
+  # 如果未配置，则使用模拟模式（仅记录切片请求，不实际执行切片）
+  video_source_path: ""  # 例如："D:\\recordings\\live.mp4" 或 "/app/recordings/live.mp4
