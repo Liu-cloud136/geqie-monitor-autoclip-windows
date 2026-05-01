@@ -50,6 +50,17 @@ import live_chatroom
 # 导入弹幕分析模块
 from danmaku_analyzer import get_danmaku_analyzer, DanmakuAnalyzer, SentimentType
 
+# 导入自动切片触发模块
+try:
+    from auto_clip_trigger import (
+        get_auto_clip_trigger, load_auto_clip_config_from_yaml,
+        AutoClipConfig, AutoClipTrigger, ClipTriggerRequest, ClipTriggerStatus
+    )
+    AUTO_CLIP_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"自动切片模块导入失败: {e}")
+    AUTO_CLIP_AVAILABLE = False
+
 # 导入数据导出模块
 try:
     from export_manager import ExportManager, ExportFormat, ExportTemplate
@@ -3689,6 +3700,11 @@ class BilibiliDanmakuMonitor:
         else:
             logging.info("🔓 匿名模式")
         
+        # 自动切片触发相关
+        self.auto_clip_trigger = None
+        self.auto_clip_config = None
+        self.video_source_path = None  # 视频源路径（用于切片）
+        
         # 弹幕监听器
         self.danmaku = LiveDanmaku(self.room_id, credential=self.credential)
         
@@ -3715,6 +3731,33 @@ class BilibiliDanmakuMonitor:
         timezone = get_config('app', 'timezone', default='Asia/Shanghai')
         logging.info(f"⏰ 系统时区: 中国时区（{timezone}）")
         logging.info(f"🔄 自动重连机制: 最大重试{self.max_reconnect_attempts}次，延迟{self.reconnect_delay}秒")
+        
+        # 初始化自动切片配置
+        if AUTO_CLIP_AVAILABLE:
+            try:
+                self.auto_clip_config = load_auto_clip_config_from_yaml(config_manager)
+                self.auto_clip_trigger = get_auto_clip_trigger(self.auto_clip_config)
+                
+                # 从配置中获取视频源路径
+                self.video_source_path = get_config("auto_clip", "video_source_path", default=None)
+                
+                logging.info("=" * 60)
+                logging.info("🎬 自动切片配置:")
+                logging.info(f"   - 自动切片: {'启用' if self.auto_clip_config.enable_auto_clip else '禁用'}")
+                logging.info(f"   - 前置缓冲: {self.auto_clip_config.pre_buffer_seconds}秒")
+                logging.info(f"   - 后置缓冲: {self.auto_clip_config.post_buffer_seconds}秒")
+                logging.info(f"   - 最大并发: {self.auto_clip_config.max_concurrent_clips}")
+                logging.info(f"   - 切片冷却: {self.auto_clip_config.clip_cooldown_seconds}秒")
+                logging.info(f"   - 去重窗口: {self.auto_clip_config.deduplication_window_seconds}秒")
+                if self.video_source_path:
+                    logging.info(f"   - 视频源路径: {self.video_source_path}")
+                else:
+                    logging.info(f"   - 视频源路径: 未配置（将使用模拟模式）")
+                logging.info("=" * 60)
+            except Exception as e:
+                logging.warning(f"自动切片初始化失败: {e}")
+        else:
+            logging.info("🎬 自动切片模块未启用")
 
     async def get_room_info(self) -> Optional[Dict]:
         """获取直播间信息 - 只获取标题和直播状态"""
@@ -4037,15 +4080,90 @@ class BilibiliDanmakuMonitor:
 
                 logging.info(f"保存鸽切数据: 用户{user_name[:10]}... - '{safe_message}', 记录ID: {record_id}")
 
+                # 计算直播经过时间
+                live_duration = None
+                reference_time = self.live_start_time if self.live_start_time and self.live_start_time > 0 else self.monitor_start_time
+                if reference_time and reference_time > 0:
+                    duration_seconds = get_china_timestamp() - reference_time
+                    hours = int(duration_seconds // 3600)
+                    minutes = int((duration_seconds % 3600) // 60)
+                    seconds = int(duration_seconds % 60)
+                    live_duration = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+                # 触发自动切片
+                if AUTO_CLIP_AVAILABLE and self.auto_clip_trigger:
+                    try:
+                        clip_request = self.auto_clip_trigger.trigger_clip(
+                            room_id=self.room_id,
+                            room_title=room_title,
+                            keyword=matched_keyword,
+                            username=user_name,
+                            danmaku_content=message_content,
+                            danmaku_timestamp=timestamp,
+                            video_source=self.video_source_path,
+                            live_duration=live_duration,
+                            metadata={
+                                'record_id': record_id,
+                                'room_info': self.room_info_cache
+                            }
+                        )
+                        
+                        if clip_request:
+                            logging.info(f"🎬 自动切片请求已创建: {clip_request.request_id}")
+                            # 将切片请求信息添加到事件数据中
+                            keyword_event_data = {
+                                'user_name': user_name,
+                                'message_content': message_content,
+                                'matched_keyword': matched_keyword,
+                                'room_info': self.room_info_cache,
+                                'record_id': record_id,
+                                'timestamp': get_china_timestamp(),
+                                'live_duration': live_duration,
+                                'clip_request': {
+                                    'request_id': clip_request.request_id,
+                                    'status': clip_request.status.value,
+                                    'start_offset_seconds': clip_request.start_offset_seconds,
+                                    'duration_seconds': clip_request.duration_seconds
+                                }
+                            }
+                        else:
+                            # 切片被冷却或去重跳过
+                            keyword_event_data = {
+                                'user_name': user_name,
+                                'message_content': message_content,
+                                'matched_keyword': matched_keyword,
+                                'room_info': self.room_info_cache,
+                                'record_id': record_id,
+                                'timestamp': get_china_timestamp(),
+                                'live_duration': live_duration,
+                                'clip_skipped': True,
+                                'clip_skip_reason': '冷却或去重'
+                            }
+                    except Exception as e:
+                        logging.error(f"触发自动切片失败: {e}")
+                        keyword_event_data = {
+                            'user_name': user_name,
+                            'message_content': message_content,
+                            'matched_keyword': matched_keyword,
+                            'room_info': self.room_info_cache,
+                            'record_id': record_id,
+                            'timestamp': get_china_timestamp(),
+                            'live_duration': live_duration,
+                            'clip_error': str(e)
+                        }
+                else:
+                    # 自动切片不可用时
+                    keyword_event_data = {
+                        'user_name': user_name,
+                        'message_content': message_content,
+                        'matched_keyword': matched_keyword,
+                        'room_info': self.room_info_cache,
+                        'record_id': record_id,
+                        'timestamp': get_china_timestamp(),
+                        'live_duration': live_duration
+                    }
+
                 # 发送事件通知前端（WebSocket）
-                keyword_event_data = {
-                    'user_name': user_name,
-                    'message_content': message_content,
-                    'matched_keyword': matched_keyword,
-                    'room_info': self.room_info_cache,
-                    'record_id': record_id,
-                    'timestamp': get_china_timestamp()
-                }
                 broadcast_event('keyword_match', keyword_event_data)
                 logging.info(f"发送关键词匹配事件: {user_name} - {message_content} (WebSocket)")
 
@@ -4122,6 +4240,14 @@ class BilibiliDanmakuMonitor:
         self.is_live = False
         self.is_monitoring = False
 
+        # 停止自动切片触发器
+        if AUTO_CLIP_AVAILABLE and self.auto_clip_trigger:
+            try:
+                await self.auto_clip_trigger.stop()
+                logging.info("🛑 自动切片触发器已停止")
+            except Exception as e:
+                logging.error(f"自动切片触发器停止失败: {e}")
+
         # 输出最终统计
         if self.live_start_time:
             duration = get_china_timestamp() - self.live_start_time
@@ -4163,6 +4289,14 @@ class BilibiliDanmakuMonitor:
             self.is_monitoring = True
             self.is_live = True  # 标记为活跃状态,确保弹幕能被处理
 
+            # 启动自动切片触发器
+            if AUTO_CLIP_AVAILABLE and self.auto_clip_trigger:
+                try:
+                    await self.auto_clip_trigger.start()
+                    logging.info("✅ 自动切片触发器已启动")
+                except Exception as e:
+                    logging.error(f"自动切片触发器启动失败: {e}")
+
             # 发送监控开始邮件提醒
             await self.send_notification("monitor_start", room_info=self.room_info_cache)
 
@@ -4201,6 +4335,15 @@ class BilibiliDanmakuMonitor:
             # 即使获取失败也开始监控
             self.is_monitoring = True
             self.is_live = True
+            
+            # 启动自动切片触发器（即使没有房间信息也启动）
+            if AUTO_CLIP_AVAILABLE and self.auto_clip_trigger:
+                try:
+                    await self.auto_clip_trigger.start()
+                    logging.info("✅ 自动切片触发器已启动")
+                except Exception as e:
+                    logging.error(f"自动切片触发器启动失败: {e}")
+            
             logging.warning("虽然获取直播间信息失败,但仍然开始监控弹幕")
 
     async def on_disconnect(self):
