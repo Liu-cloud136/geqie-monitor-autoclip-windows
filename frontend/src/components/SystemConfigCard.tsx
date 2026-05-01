@@ -18,7 +18,6 @@ import {
 } from '../services/systemConfigApi'
 
 const { Text, Title } = Typography
-const { Option } = Select
 
 interface SystemConfigCardProps {
   category: 'processing' | 'video' | 'topic' | 'logging' | 'advanced'
@@ -263,15 +262,17 @@ const SystemConfigCard: React.FC<SystemConfigCardProps> = ({ category }) => {
                 label="编码预设"
                 extra={configInfo['encoder_preset']}
               >
-                <Select>
-                  <Option value="p1">p1 (最快)</Option>
-                  <Option value="p2">p2</Option>
-                  <Option value="p3">p3</Option>
-                  <Option value="p4">p4</Option>
-                  <Option value="p5">p5</Option>
-                  <Option value="p6">p6 (平衡)</Option>
-                  <Option value="p7">p7 (最慢，质量最好)</Option>
-                </Select>
+                <Select
+                  options={[
+                    { value: 'p1', label: 'p1 (最快)' },
+                    { value: 'p2', label: 'p2' },
+                    { value: 'p3', label: 'p3' },
+                    { value: 'p4', label: 'p4' },
+                    { value: 'p5', label: 'p5' },
+                    { value: 'p6', label: 'p6 (平衡)' },
+                    { value: 'p7', label: 'p7 (最慢，质量最好)' }
+                  ]}
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -382,13 +383,15 @@ const SystemConfigCard: React.FC<SystemConfigCardProps> = ({ category }) => {
                 label="日志级别"
                 extra={configInfo['log_level']}
               >
-                <Select>
-                  <Option value="DEBUG">DEBUG</Option>
-                  <Option value="INFO">INFO</Option>
-                  <Option value="WARNING">WARNING</Option>
-                  <Option value="ERROR">ERROR</Option>
-                  <Option value="CRITICAL">CRITICAL</Option>
-                </Select>
+                <Select
+                  options={[
+                    { value: 'DEBUG', label: 'DEBUG' },
+                    { value: 'INFO', label: 'INFO' },
+                    { value: 'WARNING', label: 'WARNING' },
+                    { value: 'ERROR', label: 'ERROR' },
+                    { value: 'CRITICAL', label: 'CRITICAL' }
+                  ]}
+                />
               </Form.Item>
             </Col>
             <Col span={24}>

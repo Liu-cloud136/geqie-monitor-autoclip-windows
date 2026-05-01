@@ -183,6 +183,230 @@ export const monitorApiService = {
   }> => {
     return monitorApi.get('config')
   },
+
+  exportData: async (params: {
+    format?: 'excel' | 'csv' | 'pdf'
+    rooms?: number[]
+    dateRange?: 'today' | '7days' | '14days' | '30days' | 'all' | 'custom'
+    startDate?: string
+    endDate?: string
+    template?: 'standard' | 'visual' | 'full'
+    metricBasic?: boolean
+    metricRating?: boolean
+    metricRoom?: boolean
+    metricCharts?: boolean
+    metricStats?: boolean
+  }): Promise<Blob> => {
+    const queryParams = new URLSearchParams()
+    
+    if (params.format) queryParams.append('format', params.format)
+    if (params.rooms && params.rooms.length > 0) {
+      queryParams.append('rooms', params.rooms.join(','))
+    }
+    if (params.dateRange) queryParams.append('date_range', params.dateRange)
+    if (params.startDate) queryParams.append('start_date', params.startDate)
+    if (params.endDate) queryParams.append('end_date', params.endDate)
+    if (params.template) queryParams.append('template', params.template)
+    if (params.metricBasic !== undefined) queryParams.append('metric_basic', String(params.metricBasic))
+    if (params.metricRating !== undefined) queryParams.append('metric_rating', String(params.metricRating))
+    if (params.metricRoom !== undefined) queryParams.append('metric_room', String(params.metricRoom))
+    if (params.metricCharts !== undefined) queryParams.append('metric_charts', String(params.metricCharts))
+    if (params.metricStats !== undefined) queryParams.append('metric_stats', String(params.metricStats))
+    
+    const response = await monitorApi.get(`export/data?${queryParams.toString()}`, {
+      responseType: 'blob'
+    })
+    
+    return response as unknown as Blob
+  },
+
+  getRealtimeAnalysis: async (): Promise<{
+    success: boolean
+    data: {
+      timestamp: number
+      total_danmaku_analyzed: number
+      sentiment: {
+        last_hour: {
+          total: number
+          positive: number
+          neutral: number
+          negative: number
+          positive_ratio: number
+          neutral_ratio: number
+          negative_ratio: number
+          avg_sentiment: number
+          time_window_seconds: number
+        }
+        last_5min: {
+          total: number
+          positive: number
+          neutral: number
+          negative: number
+          positive_ratio: number
+          neutral_ratio: number
+          negative_ratio: number
+          avg_sentiment: number
+          time_window_seconds: number
+        }
+      }
+      hot_topics: Array<{
+        keyword: string
+        count: number
+        trend_score: number
+      }>
+      duplicate_stats: Array<{
+        content_hash: string
+        content_sample: string
+        count: number
+        top_users: Array<{ username: string; count: number }>
+        first_seen: number
+        last_seen: number
+        avg_sentiment: number
+        time_span: number
+      }>
+      active_users: Array<{
+        username: string
+        total_danmaku: number
+        positive: number
+        neutral: number
+        negative: number
+        positive_ratio: number
+        negative_ratio: number
+        top_keywords: Array<{ word: string; count: number }>
+        last_seen: number
+        avg_sentiment: number
+        duplicate_ratio: number
+      }>
+      suspicious_users: Array<{
+        username: string
+        risk_score: number
+        total_danmaku: number
+        avg_sentiment: number
+        duplicate_ratio: number
+        recent_negative_count: number
+        last_seen: number
+      }>
+      suspicious_count: number
+    }
+  }> => {
+    return monitorApi.get('danmaku/analysis/realtime')
+  },
+
+  getSentimentAnalysis: async (timeWindow: number = 3600): Promise<{
+    success: boolean
+    data: {
+      total: number
+      positive: number
+      neutral: number
+      negative: number
+      positive_ratio: number
+      neutral_ratio: number
+      negative_ratio: number
+      avg_sentiment: number
+      time_window_seconds: number
+    }
+  }> => {
+    return monitorApi.get('danmaku/analysis/sentiment', {
+      params: { time_window: timeWindow }
+    })
+  },
+
+  getWordcloudData: async (timeWindow: number = 3600, maxWords: number = 100): Promise<{
+    success: boolean
+    data: {
+      words: Array<{ text: string; value: number }>
+      total_words: number
+      time_window_seconds: number
+    }
+  }> => {
+    return monitorApi.get('danmaku/analysis/wordcloud', {
+      params: { time_window: timeWindow, max_words: maxWords }
+    })
+  },
+
+  getHotTopics: async (timeWindow: number = 3600, topN: number = 10): Promise<{
+    success: boolean
+    data: Array<{
+      keyword: string
+      count: number
+      trend_score: number
+      related_danmaku: Array<{
+        username: string
+        content: string
+        timestamp: number
+        sentiment: string
+      }>
+    }>
+  }> => {
+    return monitorApi.get('danmaku/analysis/hot_topics', {
+      params: { time_window: timeWindow, top_n: topN }
+    })
+  },
+
+  getDuplicateStats: async (topN: number = 20): Promise<{
+    success: boolean
+    data: Array<{
+      content_hash: string
+      content_sample: string
+      count: number
+      top_users: Array<{ username: string; count: number }>
+      first_seen: number
+      last_seen: number
+      avg_sentiment: number
+      time_span: number
+    }>
+  }> => {
+    return monitorApi.get('danmaku/analysis/duplicates', {
+      params: { top_n: topN }
+    })
+  },
+
+  getActiveUsers: async (timeWindow: number = 3600, topN: number = 20): Promise<{
+    success: boolean
+    data: Array<{
+      username: string
+      total_danmaku: number
+      positive: number
+      neutral: number
+      negative: number
+      positive_ratio: number
+      negative_ratio: number
+      top_keywords: Array<{ word: string; count: number }>
+      last_seen: number
+      avg_sentiment: number
+      duplicate_ratio: number
+    }>
+  }> => {
+    return monitorApi.get('danmaku/analysis/active_users', {
+      params: { time_window: timeWindow, top_n: topN }
+    })
+  },
+
+  getSuspiciousUsers: async (timeWindow: number = 3600): Promise<{
+    success: boolean
+    data: Array<{
+      username: string
+      risk_score: number
+      total_danmaku: number
+      avg_sentiment: number
+      duplicate_ratio: number
+      recent_negative_count: number
+      last_seen: number
+    }>
+  }> => {
+    return monitorApi.get('danmaku/analysis/suspicious_users', {
+      params: { time_window: timeWindow }
+    })
+  },
+
+  getWordFrequency: async (timeWindow: number = 3600, topN: number = 100): Promise<{
+    success: boolean
+    data: Array<{ word: string; count: number }>
+  }> => {
+    return monitorApi.get('danmaku/analysis/word_frequency', {
+      params: { time_window: timeWindow, top_n: topN }
+    })
+  },
 }
 
 export default monitorApi

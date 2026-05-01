@@ -12,16 +12,24 @@ import {
   Col,
   Statistic,
   Empty,
-  Pagination
+  Pagination,
+  Modal,
+  Radio,
+  Select,
+  Divider
 } from 'antd'
 import {
   HistoryOutlined,
   ReloadOutlined,
   DownloadOutlined,
   CalendarOutlined,
-  EyeOutlined
+  EyeOutlined,
+  FileExcelOutlined,
+  FileTextOutlined,
+  FilePdfOutlined
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
+import type { RadioChangeEvent } from 'antd/es/radio'
 import dayjs from 'dayjs'
 
 import { monitorApiService, DanmakuRecord } from '../services/monitorApi'
@@ -32,6 +40,13 @@ const MonitorHistoryPage: React.FC = () => {
   const [records, setRecords] = useState<DanmakuRecord[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
+  
+  const [exportModalVisible, setExportModalVisible] = useState(false)
+  const [exportFormat, setExportFormat] = useState<'excel' | 'csv' | 'pdf'>('excel')
+  const [exportDateRange, setExportDateRange] = useState<'today' | '7days' | '14days' | '30days' | 'all' | 'custom'>('today')
+  const [exportStartDate, setExportStartDate] = useState<string>('')
+  const [exportEndDate, setExportEndDate] = useState<string>('')
+  const [exporting, setExporting] = useState(false)
 
   const loadHistoryData = async () => {
     if (!selectedDate) {
@@ -130,7 +145,76 @@ const MonitorHistoryPage: React.FC = () => {
   ]
 
   const handleExport = () => {
-    message.info('导出功能开发中')
+    setExportModalVisible(true)
+  }
+
+  const handleFormatChange = (e: RadioChangeEvent) => {
+    setExportFormat(e.target.value as 'excel' | 'csv' | 'pdf')
+  }
+
+  const handleDateRangeChange = (value: string) => {
+    setExportDateRange(value as 'today' | '7days' | '14days' | '30days' | 'all' | 'custom')
+  }
+
+  const downloadFile = (blob: Blob, filename: string) => {
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  }
+
+  const handleExportConfirm = async () => {
+    setExporting(true)
+    try {
+      let startDate: string | undefined
+      let endDate: string | undefined
+      let dateRange: 'today' | '7days' | '14days' | '30days' | 'all' | 'custom' = exportDateRange
+
+      if (exportDateRange === 'custom') {
+        if (!exportStartDate || !exportEndDate) {
+          message.warning('请选择开始日期和结束日期')
+          setExporting(false)
+          return
+        }
+        startDate = exportStartDate
+        endDate = exportEndDate
+      } else if (exportDateRange === 'today') {
+        startDate = selectedDate
+        endDate = selectedDate
+      }
+
+      const blob = await monitorApiService.exportData({
+        format: exportFormat,
+        dateRange: dateRange,
+        startDate: startDate,
+        endDate: endDate,
+        metricBasic: true,
+        metricRating: true,
+        metricRoom: true,
+        metricCharts: true,
+        metricStats: true
+      })
+
+      const extensions: Record<string, string> = {
+        excel: 'xlsx',
+        csv: 'csv',
+        pdf: 'pdf'
+      }
+      const filename = `export_${dayjs().format('YYYYMMDD_HHmmss')}.${extensions[exportFormat]}`
+      
+      downloadFile(blob, filename)
+      message.success('导出成功')
+      setExportModalVisible(false)
+    } catch (error) {
+      console.error('导出失败:', error)
+      message.error('导出失败，请确保监控服务已启动并安装了导出依赖')
+    } finally {
+      setExporting(false)
+    }
   }
 
   const paginatedRecords = records.slice(
@@ -277,6 +361,112 @@ const MonitorHistoryPage: React.FC = () => {
           )}
         </Spin>
       </Card>
+
+      <Modal
+        title={
+          <Space>
+            <DownloadOutlined />
+            <span>数据导出</span>
+          </Space>
+        }
+        open={exportModalVisible}
+        onCancel={() => setExportModalVisible(false)}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => setExportModalVisible(false)}
+          >
+            取消
+          </Button>,
+          <Button
+            key="export"
+            type="primary"
+            icon={<DownloadOutlined />}
+            onClick={handleExportConfirm}
+            loading={exporting}
+          >
+            开始导出
+          </Button>
+        ]}
+        width={600}
+      >
+        <Divider orientation="left">导出格式</Divider>
+        <Radio.Group value={exportFormat} onChange={handleFormatChange}>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Radio.Button value="excel" style={{ height: 60, display: 'flex', alignItems: 'center', padding: '0 24px' }}>
+              <Space>
+                <FileExcelOutlined style={{ fontSize: 24, color: '#52c41a' }} />
+                <div>
+                  <div style={{ fontWeight: 600 }}>Excel (.xlsx)</div>
+                  <div style={{ fontSize: 12, color: '#999' }}>适合数据处理和分析</div>
+                </div>
+              </Space>
+            </Radio.Button>
+            <Radio.Button value="csv" style={{ height: 60, display: 'flex', alignItems: 'center', padding: '0 24px' }}>
+              <Space>
+                <FileTextOutlined style={{ fontSize: 24, color: '#1890ff' }} />
+                <div>
+                  <div style={{ fontWeight: 600 }}>CSV (.csv)</div>
+                  <div style={{ fontSize: 12, color: '#999' }}>通用格式，兼容性最好</div>
+                </div>
+              </Space>
+            </Radio.Button>
+            <Radio.Button value="pdf" style={{ height: 60, display: 'flex', alignItems: 'center', padding: '0 24px' }}>
+              <Space>
+                <FilePdfOutlined style={{ fontSize: 24, color: '#ff4d4f' }} />
+                <div>
+                  <div style={{ fontWeight: 600 }}>PDF (.pdf)</div>
+                  <div style={{ fontSize: 12, color: '#999' }}>适合报告和分享</div>
+                </div>
+              </Space>
+            </Radio.Button>
+          </Space>
+        </Radio.Group>
+
+        <Divider orientation="left" style={{ marginTop: 24 }}>时间范围</Divider>
+        <Select
+          value={exportDateRange}
+          onChange={handleDateRangeChange}
+          style={{ width: '100%', marginBottom: 16 }}
+          options={[
+            { value: 'today', label: '今天' },
+            { value: '7days', label: '最近7天' },
+            { value: '14days', label: '最近14天' },
+            { value: '30days', label: '最近30天' },
+            { value: 'all', label: '全部数据' },
+            { value: 'custom', label: '自定义日期范围' }
+          ]}
+        />
+
+        {exportDateRange === 'custom' && (
+          <Row gutter={16} style={{ marginBottom: 16 }}>
+            <Col span={12}>
+              <div style={{ marginBottom: 4, color: '#666', fontSize: 12 }}>开始日期</div>
+              <DatePicker
+                value={exportStartDate ? dayjs(exportStartDate) : null}
+                onChange={(date) => setExportStartDate(date ? date.format('YYYY-MM-DD') : '')}
+                style={{ width: '100%' }}
+              />
+            </Col>
+            <Col span={12}>
+              <div style={{ marginBottom: 4, color: '#666', fontSize: 12 }}>结束日期</div>
+              <DatePicker
+                value={exportEndDate ? dayjs(exportEndDate) : null}
+                onChange={(date) => setExportEndDate(date ? date.format('YYYY-MM-DD') : '')}
+                style={{ width: '100%' }}
+              />
+            </Col>
+          </Row>
+        )}
+
+        <Divider orientation="left" style={{ marginTop: 24 }}>导出说明</Divider>
+        <div style={{ color: '#666', fontSize: 13, lineHeight: 1.6 }}>
+          <p>• Excel 和 CSV 格式包含所有数据字段</p>
+          <p>• PDF 格式包含统计摘要和可视化图表</p>
+          <p>• 导出功能需要监控服务已启动</p>
+          <p>• PDF 导出需要安装 reportlab 库</p>
+        </div>
+      </Modal>
     </div>
   )
 }

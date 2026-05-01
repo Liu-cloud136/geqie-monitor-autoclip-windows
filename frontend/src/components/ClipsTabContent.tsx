@@ -7,7 +7,7 @@ import React from 'react'
 import { Card, Radio, Empty, Tag, Button, Typography } from 'antd'
 import { PlayCircleOutlined, VideoCameraOutlined } from '@ant-design/icons'
 import ClipCard from '../components/ClipCard'
-import { Clip } from '../types/api'
+import { Clip } from '../store/useProjectStore'
 
 const { Title, Text } = Typography
 

@@ -6,10 +6,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { message } from 'antd'
-import { useProjectStore } from '../store/useProjectStore'
+import { useProjectStore, Clip } from '../store/useProjectStore'
 import { projectApi, clipEditApi } from '../services/api'
 import { useClipEditStore } from '../stores/useClipEditStore'
-import { Clip } from '../types/api'
 
 /**
  * 项目详情页面的状态和操作

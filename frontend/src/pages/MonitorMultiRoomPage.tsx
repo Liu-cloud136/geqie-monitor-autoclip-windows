@@ -28,8 +28,6 @@ import type { ColumnsType } from 'antd/es/table'
 
 import { monitorApiService, RoomInfo, DanmakuRecord, TopUser, DailyStat } from '../services/monitorApi'
 
-const { TabPane } = Tabs
-
 const MonitorMultiRoomPage: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [rooms, setRooms] = useState<RoomInfo[]>([])
@@ -205,102 +203,115 @@ const MonitorMultiRoomPage: React.FC = () => {
       </Row>
 
       <Card style={{ borderRadius: 12 }}>
-        <Tabs activeKey={activeTab} onChange={setActiveTab}>
-          <TabPane tab="概览视图" key="overview">
-            <Spin spinning={loading}>
-              {rooms.length > 0 ? (
-                <Row gutter={[16, 16]}>
-                  {rooms.map((room) => (
-                    <Col xs={24} sm={12} lg={8} key={room.room_id}>
-                      <Card
-                        hoverable
-                        style={{
-                          borderRadius: 12,
-                          borderLeft: `4px solid ${getLiveStatusColor(room.is_live)}`,
-                          cursor: 'pointer',
-                        }}
-                        onClick={() => showRoomDetail(room)}
-                      >
-                        <Card.Meta
-                          title={
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontWeight: 'bold' }}>
-                                {room.nickname || `直播间 ${room.room_id}`}
-                              </span>
-                              <Tag color={room.is_live ? 'success' : 'default'}>
-                                {room.is_live ? '直播中' : '未开播'}
-                              </Tag>
-                            </div>
-                          }
-                          description={
-                            <div style={{ marginTop: 8 }}>
-                              <div style={{ color: '#999', fontSize: 12, marginBottom: 8 }}>
-                                {room.room_title || '暂无标题'}
-                              </div>
-                              <Row gutter={[16, 0]}>
-                                <Col span={8}>
-                                  <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: 18, fontWeight: 'bold', color: '#1890ff' }}>
-                                      {room.db_today_count || 0}
-                                    </div>
-                                    <div style={{ fontSize: 11, color: '#999' }}>今日</div>
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            {
+              key: 'overview',
+              label: '概览视图',
+              children: (
+                <Spin spinning={loading}>
+                  {rooms.length > 0 ? (
+                    <Row gutter={[16, 16]}>
+                      {rooms.map((room) => (
+                        <Col xs={24} sm={12} lg={8} key={room.room_id}>
+                          <Card
+                            hoverable
+                            style={{
+                              borderRadius: 12,
+                              borderLeft: `4px solid ${getLiveStatusColor(room.is_live)}`,
+                              cursor: 'pointer',
+                            }}
+                            onClick={() => showRoomDetail(room)}
+                          >
+                            <Card.Meta
+                              title={
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontWeight: 'bold' }}>
+                                    {room.nickname || `直播间 ${room.room_id}`}
+                                  </span>
+                                  <Tag color={room.is_live ? 'success' : 'default'}>
+                                    {room.is_live ? '直播中' : '未开播'}
+                                  </Tag>
+                                </div>
+                              }
+                              description={
+                                <div style={{ marginTop: 8 }}>
+                                  <div style={{ color: '#999', fontSize: 12, marginBottom: 8 }}>
+                                    {room.room_title || '暂无标题'}
                                   </div>
-                                </Col>
-                                <Col span={8}>
-                                  <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: 18, fontWeight: 'bold', color: '#52c41a' }}>
-                                      {room.db_week_count || 0}
-                                    </div>
-                                    <div style={{ fontSize: 11, color: '#999' }}>本周</div>
-                                  </div>
-                                </Col>
-                                <Col span={8}>
-                                  <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: 18, fontWeight: 'bold', color: '#faad14' }}>
-                                      {room.keyword_count || 0}
-                                    </div>
-                                    <div style={{ fontSize: 11, color: '#999' }}>关键词</div>
-                                  </div>
-                                </Col>
-                              </Row>
-                            </div>
-                          }
-                        />
-                      </Card>
-                    </Col>
-                  ))}
-                </Row>
-              ) : (
-                <Empty
-                  description={
-                    <div>
-                      <p>暂未配置多房间监控</p>
-                      <p style={{ color: '#999', fontSize: 12 }}>请确保监控服务已启动且配置了多房间</p>
-                    </div>
-                  }
-                />
-              )}
-            </Spin>
-          </TabPane>
-
-          <TabPane tab="对比分析" key="comparison">
-            <Alert
-              message="对比分析功能"
-              description="选择时间范围查看多个房间的数据对比，支持按数据量、关键词占比等指标进行对比分析。"
-              type="info"
-              showIcon
-              style={{ marginBottom: 16 }}
-            />
-            <Empty
-              description={
-                <div>
-                  <p>对比分析功能开发中...</p>
-                  <p style={{ color: '#999', fontSize: 12 }}>将支持：房间数据对比图表、关键词按房间分布、数据导出等功能</p>
-                </div>
-              }
-            />
-          </TabPane>
-        </Tabs>
+                                  <Row gutter={[16, 0]}>
+                                    <Col span={8}>
+                                      <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: 18, fontWeight: 'bold', color: '#1890ff' }}>
+                                          {room.db_today_count || 0}
+                                        </div>
+                                        <div style={{ fontSize: 11, color: '#999' }}>今日</div>
+                                      </div>
+                                    </Col>
+                                    <Col span={8}>
+                                      <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: 18, fontWeight: 'bold', color: '#52c41a' }}>
+                                          {room.db_week_count || 0}
+                                        </div>
+                                        <div style={{ fontSize: 11, color: '#999' }}>本周</div>
+                                      </div>
+                                    </Col>
+                                    <Col span={8}>
+                                      <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: 18, fontWeight: 'bold', color: '#faad14' }}>
+                                          {room.keyword_count || 0}
+                                        </div>
+                                        <div style={{ fontSize: 11, color: '#999' }}>关键词</div>
+                                      </div>
+                                    </Col>
+                                  </Row>
+                                </div>
+                              }
+                            />
+                          </Card>
+                        </Col>
+                      ))}
+                    </Row>
+                  ) : (
+                    <Empty
+                      description={
+                        <div>
+                          <p>暂未配置多房间监控</p>
+                          <p style={{ color: '#999', fontSize: 12 }}>请确保监控服务已启动且配置了多房间</p>
+                        </div>
+                      }
+                    />
+                  )}
+                </Spin>
+              )
+            },
+            {
+              key: 'comparison',
+              label: '对比分析',
+              children: (
+                <>
+                  <Alert
+                    message="对比分析功能"
+                    description="选择时间范围查看多个房间的数据对比，支持按数据量、关键词占比等指标进行对比分析。"
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                  />
+                  <Empty
+                    description={
+                      <div>
+                        <p>对比分析功能开发中...</p>
+                        <p style={{ color: '#999', fontSize: 12 }}>将支持：房间数据对比图表、关键词按房间分布、数据导出等功能</p>
+                      </div>
+                    }
+                  />
+                </>
+              )
+            }
+          ]}
+        />
       </Card>
 
       <Modal

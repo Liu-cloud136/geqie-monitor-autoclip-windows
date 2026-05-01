@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Layout, Button, Menu, Dropdown, Space, Badge } from 'antd'
 import {
   SettingOutlined,
@@ -16,7 +16,6 @@ const { Header: AntHeader } = Layout
 const Header: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const [openKeys, setOpenKeys] = useState<string[]>([])
 
   const isMonitorPath = location.pathname.startsWith('/monitor')
   const isAIClipPath = !isMonitorPath && location.pathname !== '/settings'
@@ -57,10 +56,6 @@ const Header: React.FC = () => {
       onClick: () => navigate('/')
     }
   ]
-
-  const handleOpenChange = (keys: string[]) => {
-    setOpenKeys(keys)
-  }
 
   return (
     <AntHeader
@@ -134,7 +129,6 @@ const Header: React.FC = () => {
             }}
             placement="bottomLeft"
             trigger={['click']}
-            onOpenChange={handleOpenChange}
           >
             <Button
               type={isMonitorPath ? 'primary' : 'text'}
