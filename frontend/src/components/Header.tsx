@@ -1,85 +1,84 @@
 import React, { useState } from 'react'
-import { Layout, Button, Menu, Dropdown, Space, Typography, Badge } from 'antd'
+import { Layout, Button, Menu, Dropdown, Space, Badge } from 'antd'
 import {
   SettingOutlined,
   HomeOutlined,
   VideoCameraOutlined,
   BarChartOutlined,
-  FileTextOutlined,
+  HistoryOutlined,
   GlobalOutlined,
-  MoreOutlined,
-  DownOutlined
+  DashboardOutlined
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 
 const { Header: AntHeader } = Layout
-const { Text } = Typography
-
-const MONITOR_URL = 'http://localhost:5000'
 
 const Header: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const isHomePage = location.pathname === '/'
-  const isSettingsPage = location.pathname === '/settings'
-  const isMonitorPage = location.pathname.startsWith('/monitor')
+  const [openKeys, setOpenKeys] = useState<string[]>([])
 
-  const navigateToMonitor = (path?: string) => {
-    const targetPath = path ? `${MONITOR_URL}${path}` : MONITOR_URL
-    window.open(targetPath, '_blank')
-  }
+  const isMonitorPath = location.pathname.startsWith('/monitor')
+  const isAIClipPath = !isMonitorPath && location.pathname !== '/settings'
+  const isSettingsPath = location.pathname === '/settings'
 
   const monitorMenuItems = [
     {
-      key: 'today',
-      icon: <FileTextOutlined />,
+      key: '/monitor/today',
+      icon: <DashboardOutlined />,
       label: '今日数据',
-      onClick: () => navigateToMonitor('/')
+      onClick: () => navigate('/monitor/today')
     },
     {
-      key: 'multi-room',
+      key: '/monitor/multi-room',
       icon: <GlobalOutlined />,
       label: '多房间监控',
-      onClick: () => navigateToMonitor('/multi-room')
+      onClick: () => navigate('/monitor/multi-room')
     },
     {
-      key: 'analysis',
+      key: '/monitor/analysis',
       icon: <BarChartOutlined />,
       label: '弹幕分析',
-      onClick: () => navigateToMonitor('/analysis')
+      onClick: () => navigate('/monitor/analysis')
+    },
+    {
+      key: '/monitor/history',
+      icon: <HistoryOutlined />,
+      label: '历史数据',
+      onClick: () => navigate('/monitor/history')
     }
   ]
 
   const aiClipMenuItems = [
     {
-      key: 'home',
+      key: '/',
       icon: <HomeOutlined />,
       label: '项目列表',
       onClick: () => navigate('/')
-    },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: '设置',
-      onClick: () => navigate('/settings')
     }
   ]
 
+  const handleOpenChange = (keys: string[]) => {
+    setOpenKeys(keys)
+  }
+
   return (
     <AntHeader
-      className="glass-effect"
       style={{
         padding: '0 32px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         height: '72px',
-        position: 'sticky',
+        position: 'fixed',
         top: 0,
+        left: 0,
+        right: 0,
         zIndex: 1000,
         backdropFilter: 'blur(20px)',
-        background: 'rgba(26, 26, 26, 0.9)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+        background: 'rgba(26, 26, 26, 0.95)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
@@ -115,46 +114,71 @@ const Header: React.FC = () => {
           >
             AutoClip
           </span>
+          <span
+            style={{
+              marginLeft: '8px',
+              fontSize: '12px',
+              color: '#8c8c8c',
+              fontWeight: 500
+            }}
+          >
+            全能系统
+          </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <Dropdown
+            menu={{
+              items: monitorMenuItems,
+              selectedKeys: [location.pathname]
+            }}
+            placement="bottomLeft"
+            trigger={['click']}
+            onOpenChange={handleOpenChange}
+          >
+            <Button
+              type={isMonitorPath ? 'primary' : 'text'}
+              icon={<VideoCameraOutlined />}
+              style={{
+                color: isMonitorPath ? '#fff' : '#b0b0b0',
+                background: isMonitorPath
+                  ? 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
+                  : 'transparent',
+                border: 'none',
+                borderRadius: '8px',
+                height: '40px',
+                padding: '0 20px',
+                fontWeight: isMonitorPath ? 600 : 500,
+                fontSize: '14px'
+              }}
+            >
+              <Space>
+                弹幕监控
+                <Badge
+                  dot
+                  style={{
+                    backgroundColor: isMonitorPath ? '#52c41a' : '#8c8c8c'
+                  }}
+                />
+              </Space>
+            </Button>
+          </Dropdown>
+
           <Button
-            type={isMonitorPage ? 'primary' : 'text'}
-            icon={<VideoCameraOutlined />}
-            onClick={() => navigateToMonitor('/')}
+            type={isAIClipPath ? 'primary' : 'text'}
+            icon={<DashboardOutlined />}
+            onClick={() => navigate('/')}
             style={{
-              color: isMonitorPage ? '#fff' : '#666666',
-              background: isMonitorPage
+              color: isAIClipPath ? '#fff' : '#b0b0b0',
+              background: isAIClipPath
                 ? 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
                 : 'transparent',
               border: 'none',
               borderRadius: '8px',
               height: '40px',
-              padding: '0 16px',
-              fontWeight: isMonitorPage ? 500 : 400
-            }}
-          >
-            <Space>
-              弹幕监控
-              <DownOutlined style={{ fontSize: '10px' }} />
-            </Space>
-          </Button>
-
-          <Button
-            type={!isMonitorPage && !isSettingsPage ? 'primary' : 'text'}
-            icon={<FileTextOutlined />}
-            onClick={() => navigate('/')}
-            style={{
-              color: !isMonitorPage && !isSettingsPage ? '#fff' : '#666666',
-              background:
-                !isMonitorPage && !isSettingsPage
-                  ? 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
-                  : 'transparent',
-              border: 'none',
-              borderRadius: '8px',
-              height: '40px',
-              padding: '0 16px',
-              fontWeight: !isMonitorPage && !isSettingsPage ? 500 : 400
+              padding: '0 20px',
+              fontWeight: isAIClipPath ? 600 : 500,
+              fontSize: '14px'
             }}
           >
             AI 切片
@@ -163,60 +187,24 @@ const Header: React.FC = () => {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        {!isHomePage && !isMonitorPage && (
-          <Button
-            type="default"
-            icon={<HomeOutlined />}
-            onClick={() => navigate('/')}
-            style={{
-              borderRadius: '8px',
-              height: '40px',
-              padding: '0 16px'
-            }}
-          >
-            返回项目列表
-          </Button>
-        )}
-
         <Button
-          type="text"
+          type={isSettingsPath ? 'primary' : 'text'}
           icon={<SettingOutlined />}
           onClick={() => navigate('/settings')}
           style={{
-            color: '#666666',
-            border: '1px solid transparent',
+            color: isSettingsPath ? '#fff' : '#b0b0b0',
+            background: isSettingsPath
+              ? 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
+              : 'transparent',
+            border: 'none',
             borderRadius: '8px',
             height: '40px',
-            padding: '0 16px'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#f5f5f5'
-            e.currentTarget.style.borderColor = '#d0d0d0'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent'
-            e.currentTarget.style.borderColor = 'transparent'
+            padding: '0 16px',
+            fontWeight: 500
           }}
         >
           设置
         </Button>
-
-        <Dropdown
-          menu={{ items: monitorMenuItems }}
-          placement="bottomRight"
-          arrow
-        >
-          <Button
-            type="text"
-            icon={<MoreOutlined />}
-            style={{
-              color: '#666666',
-              borderRadius: '8px',
-              height: '40px',
-              padding: '0 12px'
-            }}
-          />
-        </Dropdown>
       </div>
     </AntHeader>
   )
