@@ -5,7 +5,6 @@ import {
   Table,
   Tag,
   Spin,
-  message,
   Button,
   Space,
   Row,
@@ -16,7 +15,8 @@ import {
   Modal,
   Radio,
   Select,
-  Divider
+  Divider,
+  App
 } from 'antd'
 import {
   HistoryOutlined,
@@ -35,6 +35,7 @@ import dayjs from 'dayjs'
 import { monitorApiService, DanmakuRecord } from '../services/monitorApi'
 
 const MonitorHistoryPage: React.FC = () => {
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'))
   const [records, setRecords] = useState<DanmakuRecord[]>([])

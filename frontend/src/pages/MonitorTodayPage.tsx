@@ -7,11 +7,11 @@ import {
   Table,
   Tag,
   Spin,
-  message,
   Button,
   DatePicker,
   Space,
-  Empty
+  Empty,
+  App
 } from 'antd'
 import {
   CalendarOutlined,
@@ -27,6 +27,7 @@ import dayjs from 'dayjs'
 import { monitorApiService, DanmakuRecord, TotalStats, DailyStat, TopUser } from '../services/monitorApi'
 
 const MonitorTodayPage: React.FC = () => {
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
   const [todayData, setTodayData] = useState<DanmakuRecord[]>([])
   const [totalStats, setTotalStats] = useState<TotalStats | null>(null)

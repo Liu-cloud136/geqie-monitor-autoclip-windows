@@ -5,7 +5,6 @@ import {
   Col,
   Statistic,
   Spin,
-  message,
   Button,
   Tabs,
   Tag,
@@ -13,7 +12,8 @@ import {
   Table,
   Space,
   Empty,
-  Alert
+  Alert,
+  App
 } from 'antd'
 import {
   HomeOutlined,
@@ -29,6 +29,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { monitorApiService, RoomInfo, DanmakuRecord, TopUser, DailyStat } from '../services/monitorApi'
 
 const MonitorMultiRoomPage: React.FC = () => {
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
   const [rooms, setRooms] = useState<RoomInfo[]>([])
   const [globalStats, setGlobalStats] = useState<{

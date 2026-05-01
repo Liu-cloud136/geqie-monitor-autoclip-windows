@@ -23,8 +23,20 @@ monitorApi.interceptors.response.use(
     console.log('✅ Monitor API Response:', response.config.url, 'Status:', response.status)
     return response.data
   },
-  (error) => {
+  async (error) => {
     console.error('❌ Monitor API Error:', error)
+    
+    if (error.response?.status === 400 && error.config?.responseType === 'blob') {
+      try {
+        const responseText = await error.response.data.text()
+        const errorData = JSON.parse(responseText)
+        console.error('   错误详情:', errorData)
+        return Promise.reject(new Error(errorData.error || '请求参数错误'))
+      } catch (parseError) {
+        console.error('   无法解析错误响应:', parseError)
+      }
+    }
+    
     return Promise.reject(error)
   }
 )

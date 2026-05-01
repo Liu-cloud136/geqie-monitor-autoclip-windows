@@ -4,7 +4,6 @@ import {
   Row,
   Col,
   Spin,
-  message,
   Button,
   Tag,
   Table,
@@ -21,7 +20,8 @@ import {
   Collapse,
   Radio,
   Select,
-  Typography
+  Typography,
+  App
 } from 'antd'
 
 const { Text } = Typography
@@ -114,6 +114,7 @@ interface RealtimeAnalysisData {
 }
 
 const MonitorAnalysisPage: React.FC = () => {
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
   const [totalStats, setTotalStats] = useState<TotalStats | null>(null)
   const [dailyStats, setDailyStats] = useState<DailyStat[]>([])
