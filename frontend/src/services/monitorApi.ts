@@ -29,27 +29,27 @@ monitorApi.interceptors.response.use(
   }
 )
 
-export interface TodayStats {
-  today_count: number
-  total_count: number
-  week_count: number
-  top_user_count: number
-  today_avg: number
-}
-
 export interface DanmakuRecord {
   id: number
   username: string
   content: string
   time_display: string
-  rating: number
-  created_at: string
+  datetime_display: string
+  timestamp: number
+  rating?: number
   reason?: string
+  email_status?: string
+  email_sent_time?: string | null
+  live_duration?: string
 }
 
-export interface TopUser {
-  username: string
-  count: number
+export interface TotalStats {
+  today_count: number
+  total_count: number
+  week_count: number
+  top_user_count?: number
+  top_user?: string
+  today_avg?: number
 }
 
 export interface DailyStat {
@@ -60,16 +60,23 @@ export interface DailyStat {
 export interface RoomInfo {
   room_id: number
   nickname: string
+  enabled: boolean
+  live_status: number
   is_live: boolean
-  room_title: string
+  is_monitoring: boolean
+  online: number
+  room_title?: string
+  keyword_count: number
+  total_danmaku: number
+  db_total_count: number
   db_today_count: number
   db_week_count: number
-  db_total_count: number
-  keyword_count: number
 }
 
 export interface GlobalStats {
+  total_rooms: number
   active_rooms: number
+  monitoring_rooms: number
   total_danmaku: number
   total_keyword_matches: number
 }
@@ -77,46 +84,64 @@ export interface GlobalStats {
 export interface MultiRoomStatus {
   success: boolean
   data: {
-    rooms: RoomInfo[]
     global_stats: GlobalStats
+    rooms: RoomInfo[]
+    is_multi_room_enabled: boolean
   }
 }
 
+export interface TopUser {
+  username: string
+  count: number
+}
+
 export const monitorApiService = {
-  getTodayStats: async (): Promise<TodayStats> => {
-    return monitorApi.get('today/stats')
-  },
-
-  getTodayRecords: async (page: number = 1, limit: number = 50): Promise<{
+  getTodayData: async (): Promise<{
     success: boolean
     data: DanmakuRecord[]
-    total: number
-    page: number
-    limit: number
+    count: number
   }> => {
-    return monitorApi.get('today/records', { params: { page, limit } })
+    return monitorApi.get('today')
   },
 
-  getTopUsers: async (limit: number = 10): Promise<TopUser[]> => {
-    return monitorApi.get('today/top-users', { params: { limit } })
+  getStats: async (days: number = 7): Promise<{
+    success: boolean
+    total_stats: TotalStats
+    daily_stats: DailyStat[]
+    recent_data: DanmakuRecord[]
+  }> => {
+    return monitorApi.get('stats', { params: { days } })
   },
 
-  getDailyStats: async (days: number = 7): Promise<DailyStat[]> => {
-    return monitorApi.get('stats/daily', { params: { days } })
-  },
-
-  getHistoryData: async (date: string, page: number = 1, limit: number = 50): Promise<{
+  getDateData: async (dateStr: string): Promise<{
     success: boolean
     data: DanmakuRecord[]
-    total: number
-    page: number
-    limit: number
+    count: number
   }> => {
-    return monitorApi.get('history/records', { params: { date, page, limit } })
+    return monitorApi.get(`date/${dateStr}`)
+  },
+
+  getHistoryData: async (startDate: string, endDate: string): Promise<{
+    success: boolean
+    data: DanmakuRecord[]
+    count: number
+  }> => {
+    return monitorApi.get('history', {
+      params: { start_date: startDate, end_date: endDate }
+    })
   },
 
   getMultiRoomStatus: async (): Promise<MultiRoomStatus> => {
     return monitorApi.get('multi-room/status')
+  },
+
+  getRoomComparison: async (days: number = 7): Promise<{
+    success: boolean
+    comparison_data: unknown
+    keyword_frequency: unknown
+    days: number
+  }> => {
+    return monitorApi.get('multi-room/comparison', { params: { days } })
   },
 
   getRoomStats: async (roomId: number, days: number = 7): Promise<{
@@ -125,90 +150,38 @@ export const monitorApiService = {
       top_users: TopUser[]
       daily_stats: DailyStat[]
     }
+    room_data: DanmakuRecord[]
+    keyword_frequency: unknown
+    days: number
   }> => {
     return monitorApi.get(`multi-room/${roomId}/stats`, { params: { days } })
   },
 
-  getRoomTodayRecords: async (roomId: number): Promise<{
+  getRoomTodayData: async (roomId: number): Promise<{
     success: boolean
     data: DanmakuRecord[]
+    count: number
   }> => {
     return monitorApi.get(`multi-room/${roomId}/today`)
   },
 
-  getComparisonData: async (days: number = 7): Promise<{
+  getRoomInfo: async (): Promise<{
     success: boolean
-    comparison_data: {
-      comparison_data: Array<{
-        room_id: number
-        room_title: string
-        total_count: number
-        keyword_ratio: number
-        daily_data: DailyStat[]
-      }>
-    }
-    keyword_frequency: {
-      all_keywords: Array<{ keyword: string; count: number }>
-      room_keywords: Array<{
-        room_id: number
-        room_title: string
-        total_danmaku: number
-        keywords: Array<{ keyword: string; count: number }>
-      }>
+    room_info: {
+      room_id?: number
+      room_title?: string
+      is_live?: boolean
+      online?: number
     }
   }> => {
-    return monitorApi.get('multi-room/comparison', { params: { days } })
+    return monitorApi.get('room_info')
   },
 
-  getDanmakuAnalysis: async (): Promise<{
+  getConfig: async (): Promise<{
     success: boolean
-    keyword_frequency: Array<{ word: string; count: number }>
-    sentiment_stats: {
-      positive: number
-      negative: number
-      neutral: number
-    }
-    hourly_distribution: Array<{ hour: number; count: number }>
-    weekly_distribution: Array<{ day: string; count: number }>
+    config: Record<string, unknown>
   }> => {
-    return monitorApi.get('analysis/stats')
-  },
-
-  getHeatPoints: async (): Promise<{
-    success: boolean
-    heat_points: Array<{
-      start_time: number
-      end_time: number
-      center_time: number
-      danmaku_count: number
-      density: number
-      heat_score: number
-      keywords: string[]
-      sentiment_score: number
-    }>
-  }> => {
-    return monitorApi.get('analysis/heat-points')
-  },
-
-  exportData: async (
-    format: 'excel' | 'csv' | 'pdf',
-    roomIds: number[],
-    dateRange: string,
-    startDate?: string,
-    endDate?: string,
-    metrics?: string[]
-  ): Promise<Blob> => {
-    const response = await monitorApi.post('export/data', {
-      format,
-      room_ids: roomIds,
-      date_range: dateRange,
-      start_date: startDate,
-      end_date: endDate,
-      metrics,
-    }, {
-      responseType: 'blob',
-    })
-    return response
+    return monitorApi.get('config')
   },
 }
 

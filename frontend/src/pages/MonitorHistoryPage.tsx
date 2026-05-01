@@ -30,7 +30,6 @@ const MonitorHistoryPage: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'))
   const [records, setRecords] = useState<DanmakuRecord[]>([])
-  const [totalRecords, setTotalRecords] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
 
@@ -42,14 +41,13 @@ const MonitorHistoryPage: React.FC = () => {
 
     setLoading(true)
     try {
-      const result = await monitorApiService.getHistoryData(selectedDate, currentPage, pageSize)
+      const result = await monitorApiService.getDateData(selectedDate)
       if (result.success) {
         setRecords(result.data)
-        setTotalRecords(result.total)
       }
     } catch (error) {
       console.error('Failed to load history data:', error)
-      message.error('加载历史数据失败')
+      message.error('加载历史数据失败，请确保监控服务已启动')
     } finally {
       setLoading(false)
     }
@@ -57,7 +55,7 @@ const MonitorHistoryPage: React.FC = () => {
 
   useEffect(() => {
     loadHistoryData()
-  }, [selectedDate, currentPage, pageSize])
+  }, [selectedDate])
 
   const columns: ColumnsType<DanmakuRecord> = [
     {
@@ -88,21 +86,22 @@ const MonitorHistoryPage: React.FC = () => {
       width: 100,
       align: 'center',
       render: (rating: number) => {
+        const r = rating ?? 0
         let color = 'default'
-        if (rating >= 8) color = 'success'
-        else if (rating >= 5) color = 'warning'
+        if (r >= 8) color = 'success'
+        else if (r >= 5) color = 'warning'
         else color = 'error'
-        return <Tag color={color}>{rating}分</Tag>
+        return <Tag color={color}>{r}分</Tag>
       },
     },
     {
       title: '创建时间',
-      dataIndex: 'created_at',
-      key: 'created_at',
+      dataIndex: 'datetime_display',
+      key: 'datetime_display',
       width: 180,
       render: (time: string) => (
         <span style={{ color: '#999', fontSize: 12 }}>
-          {time ? dayjs(time).format('YYYY-MM-DD HH:mm:ss') : '-'}
+          {time || '-'}
         </span>
       ),
     },
@@ -133,6 +132,11 @@ const MonitorHistoryPage: React.FC = () => {
   const handleExport = () => {
     message.info('导出功能开发中')
   }
+
+  const paginatedRecords = records.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  )
 
   return (
     <div style={{ padding: '24px' }}>
@@ -204,7 +208,7 @@ const MonitorHistoryPage: React.FC = () => {
           <Card style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
             <Statistic
               title="数据总数"
-              value={totalRecords}
+              value={records.length}
               prefix={<HistoryOutlined style={{ color: '#52c41a' }} />}
               valueStyle={{ color: '#52c41a' }}
             />
@@ -215,7 +219,7 @@ const MonitorHistoryPage: React.FC = () => {
             <Statistic
               title="当前页"
               value={currentPage}
-              suffix={`/ ${Math.ceil(totalRecords / pageSize) || 1}`}
+              suffix={`/ ${Math.ceil(records.length / pageSize) || 1}`}
               prefix={<EyeOutlined style={{ color: '#faad14' }} />}
               valueStyle={{ color: '#faad14' }}
             />
@@ -240,7 +244,7 @@ const MonitorHistoryPage: React.FC = () => {
             <>
               <Table
                 columns={columns}
-                dataSource={records}
+                dataSource={paginatedRecords}
                 rowKey="id"
                 pagination={false}
                 size="small"
@@ -250,7 +254,7 @@ const MonitorHistoryPage: React.FC = () => {
                 <Pagination
                   current={currentPage}
                   pageSize={pageSize}
-                  total={totalRecords}
+                  total={records.length}
                   showSizeChanger
                   showQuickJumper
                   showTotal={(total) => `共 ${total} 条记录`}

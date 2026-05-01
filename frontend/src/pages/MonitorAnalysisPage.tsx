@@ -24,46 +24,54 @@ import {
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 
-import { monitorApiService } from '../services/monitorApi'
+import { monitorApiService, TotalStats, DailyStat, DanmakuRecord, TopUser } from '../services/monitorApi'
 
 const MonitorAnalysisPage: React.FC = () => {
   const [loading, setLoading] = useState(false)
+  const [totalStats, setTotalStats] = useState<TotalStats | null>(null)
+  const [dailyStats, setDailyStats] = useState<DailyStat[]>([])
+  const [topUsers, setTopUsers] = useState<TopUser[]>([])
   const [keywordFrequency, setKeywordFrequency] = useState<Array<{ word: string; count: number }>>([])
-  const [sentimentStats, setSentimentStats] = useState<{ positive: number; negative: number; neutral: number } | null>(null)
-  const [hourlyDistribution, setHourlyDistribution] = useState<Array<{ hour: number; count: number }>>([])
-  const [weeklyDistribution, setWeeklyDistribution] = useState<Array<{ day: string; count: number }>>([])
-  const [heatPoints, setHeatPoints] = useState<Array<{
-    start_time: number
-    end_time: number
-    center_time: number
-    danmaku_count: number
-    density: number
-    heat_score: number
-    keywords: string[]
-    sentiment_score: number
-  }>>([])
 
   const loadData = async () => {
     setLoading(true)
     try {
-      const [analysisRes, heatRes] = await Promise.all([
-        monitorApiService.getDanmakuAnalysis(),
-        monitorApiService.getHeatPoints(),
-      ])
-
-      if (analysisRes.success) {
-        setKeywordFrequency(analysisRes.keyword_frequency || [])
-        setSentimentStats(analysisRes.sentiment_stats)
-        setHourlyDistribution(analysisRes.hourly_distribution || [])
-        setWeeklyDistribution(analysisRes.weekly_distribution || [])
-      }
-
-      if (heatRes.success) {
-        setHeatPoints(heatRes.heat_points || [])
+      const result = await monitorApiService.getStats(7)
+      
+      if (result.success) {
+        setTotalStats(result.total_stats)
+        setDailyStats(result.daily_stats || [])
+        
+        const recentData = result.recent_data || []
+        const userCountMap: Record<string, number> = {}
+        const keywordMap: Record<string, number> = {}
+        
+        recentData.forEach((item: DanmakuRecord) => {
+          const username = item.username || '未知用户'
+          userCountMap[username] = (userCountMap[username] || 0) + 1
+          
+          const content = item.content || ''
+          const words = content.split(/[\s，。！？、；：""''（）【】《》\n\r]+/).filter((w: string) => w.length >= 2)
+          words.forEach((word: string) => {
+            keywordMap[word] = (keywordMap[word] || 0) + 1
+          })
+        })
+        
+        const userList = Object.entries(userCountMap)
+          .map(([username, count]) => ({ username, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 10)
+        setTopUsers(userList)
+        
+        const keywordList = Object.entries(keywordMap)
+          .map(([word, count]) => ({ word, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 20)
+        setKeywordFrequency(keywordList)
       }
     } catch (error) {
       console.error('Failed to load analysis data:', error)
-      message.error('加载分析数据失败')
+      message.error('加载分析数据失败，请确保监控服务已启动')
     } finally {
       setLoading(false)
     }
@@ -72,91 +80,6 @@ const MonitorAnalysisPage: React.FC = () => {
   useEffect(() => {
     loadData()
   }, [])
-
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
-
-  const getSentimentColor = (score: number) => {
-    if (score > 0.6) return '#52c41a'
-    if (score < 0.4) return '#ff4d4f'
-    return '#faad14'
-  }
-
-  const getSentimentIcon = (score: number) => {
-    if (score > 0.6) return <ArrowUpOutlined style={{ color: '#52c41a' }} />
-    if (score < 0.4) return <ArrowDownOutlined style={{ color: '#ff4d4f' }} />
-    return <MinusOutlined style={{ color: '#faad14' }} />
-  }
-
-  const heatPointColumns: ColumnsType<typeof heatPoints[0]> = [
-    {
-      title: '开始时间',
-      dataIndex: 'start_time',
-      key: 'start_time',
-      render: (time: number) => <Tag color="blue">{formatTime(time)}</Tag>,
-    },
-    {
-      title: '结束时间',
-      dataIndex: 'end_time',
-      key: 'end_time',
-      render: (time: number) => <Tag color="cyan">{formatTime(time)}</Tag>,
-    },
-    {
-      title: '弹幕数量',
-      dataIndex: 'danmaku_count',
-      key: 'danmaku_count',
-      align: 'center',
-      render: (count: number) => (
-        <Tag color={count > 50 ? 'red' : count > 20 ? 'orange' : 'green'}>
-          {count}
-        </Tag>
-      ),
-    },
-    {
-      title: '热度评分',
-      dataIndex: 'heat_score',
-      key: 'heat_score',
-      align: 'center',
-      render: (score: number) => (
-        <Progress
-          percent={Math.round(score * 100)}
-          size="small"
-          status={score > 0.7 ? 'active' : score > 0.4 ? 'normal' : 'exception'}
-        />
-      ),
-    },
-    {
-      title: '情感倾向',
-      dataIndex: 'sentiment_score',
-      key: 'sentiment_score',
-      align: 'center',
-      render: (score: number) => (
-        <Space>
-          {getSentimentIcon(score)}
-          <span style={{ color: getSentimentColor(score), fontWeight: 'bold' }}>
-            {(score * 100).toFixed(1)}%
-          </span>
-        </Space>
-      ),
-    },
-    {
-      title: '关键词',
-      dataIndex: 'keywords',
-      key: 'keywords',
-      render: (keywords: string[]) => (
-        <Space size={[4, 4]} wrap>
-          {keywords.slice(0, 3).map((kw, idx) => (
-            <Tag key={idx} color="purple">{kw}</Tag>
-          ))}
-          {keywords.length > 3 && <Tag>+{keywords.length - 3}</Tag>}
-        </Space>
-      ),
-    },
-  ]
 
   const keywordColumns: ColumnsType<{ word: string; count: number; rank: number }> = [
     {
@@ -193,14 +116,10 @@ const MonitorAnalysisPage: React.FC = () => {
     },
   ]
 
-  const topKeywords = keywordFrequency.slice(0, 20).map((kw, idx) => ({
+  const topKeywords = keywordFrequency.map((kw, idx) => ({
     ...kw,
     rank: idx + 1,
   }))
-
-  const totalSentiment = sentimentStats
-    ? sentimentStats.positive + sentimentStats.negative + sentimentStats.neutral
-    : 0
 
   return (
     <div style={{ padding: '24px' }}>
@@ -226,8 +145,8 @@ const MonitorAnalysisPage: React.FC = () => {
             <p>通过对弹幕数据的深入分析，帮助您了解：</p>
             <ul>
               <li>热门关键词和话题趋势</li>
-              <li>观众情感倾向变化</li>
-              <li>高热度时段识别</li>
+              <li>活跃用户排行</li>
+              <li>每日数据统计</li>
               <li>弹幕分布规律</li>
             </ul>
           </div>
@@ -239,40 +158,42 @@ const MonitorAnalysisPage: React.FC = () => {
 
       <Spin spinning={loading}>
         <Row gutter={[16, 16]}>
-          {sentimentStats && (
-            <>
-              <Col xs={12} sm={8}>
-                <Card style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                  <Statistic
-                    title="正面情感"
-                    value={sentimentStats.positive}
-                    valueStyle={{ color: '#52c41a' }}
-                    suffix={totalSentiment > 0 ? `(${(sentimentStats.positive / totalSentiment * 100).toFixed(1)}%)` : ''}
-                  />
-                </Card>
-              </Col>
-              <Col xs={12} sm={8}>
-                <Card style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                  <Statistic
-                    title="中性情感"
-                    value={sentimentStats.neutral}
-                    valueStyle={{ color: '#faad14' }}
-                    suffix={totalSentiment > 0 ? `(${(sentimentStats.neutral / totalSentiment * 100).toFixed(1)}%)` : ''}
-                  />
-                </Card>
-              </Col>
-              <Col xs={12} sm={8}>
-                <Card style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                  <Statistic
-                    title="负面情感"
-                    value={sentimentStats.negative}
-                    valueStyle={{ color: '#ff4d4f' }}
-                    suffix={totalSentiment > 0 ? `(${(sentimentStats.negative / totalSentiment * 100).toFixed(1)}%)` : ''}
-                  />
-                </Card>
-              </Col>
-            </>
-          )}
+          <Col xs={12} sm={6}>
+            <Card style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+              <Statistic
+                title="今日数据"
+                value={totalStats?.today_count ?? 0}
+                valueStyle={{ color: '#52c41a' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={12} sm={6}>
+            <Card style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+              <Statistic
+                title="本周数据"
+                value={totalStats?.week_count ?? 0}
+                valueStyle={{ color: '#1890ff' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={12} sm={6}>
+            <Card style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+              <Statistic
+                title="总计数据"
+                value={totalStats?.total_count ?? 0}
+                valueStyle={{ color: '#faad14' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={12} sm={6}>
+            <Card style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+              <Statistic
+                title="今日平均"
+                value={totalStats?.today_avg ?? '--'}
+                valueStyle={{ color: '#722ed1' }}
+              />
+            </Card>
+          </Col>
         </Row>
 
         <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
@@ -305,48 +226,41 @@ const MonitorAnalysisPage: React.FC = () => {
               title={
                 <Space>
                   <BarChartOutlined />
-                  时段分布
+                  活跃用户 TOP 10
                 </Space>
               }
               style={{ borderRadius: 12 }}
             >
-              {hourlyDistribution.length > 0 ? (
-                <div>
-                  <h4 style={{ marginBottom: 16 }}>24小时分布</h4>
-                  <div style={{ maxHeight: 200, overflowY: 'auto' }}>
-                    {hourlyDistribution.map((item, idx) => (
-                      <div
-                        key={idx}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          marginBottom: 8,
-                        }}
-                      >
-                        <Tag style={{ width: 60, textAlign: 'center' }}>
-                          {item.hour.toString().padStart(2, '0')}:00
+              {topUsers.length > 0 ? (
+                <div style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {topUsers.map((user, index) => (
+                    <div
+                      key={user.username}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px 0',
+                        borderBottom: index < topUsers.length - 1 ? '1px solid #f0f0f0' : 'none',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Tag
+                          color={
+                            index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'orange' : 'default'
+                          }
+                          style={{ minWidth: 28, textAlign: 'center' }}
+                        >
+                          {index + 1}
                         </Tag>
-                        <div style={{ flex: 1, marginLeft: 12 }}>
-                          <Progress
-                            percent={
-                              hourlyDistribution.length > 0
-                                ? Math.round(
-                                    (item.count /
-                                      Math.max(...hourlyDistribution.map((h) => h.count))) *
-                                      100
-                                  )
-                                : 0
-                            }
-                            size="small"
-                            format={() => <span style={{ color: '#1890ff' }}>{item.count}</span>}
-                          />
-                        </div>
+                        <span>{user.username}</span>
                       </div>
-                    ))}
-                  </div>
+                      <Tag color="blue">{user.count}次</Tag>
+                    </div>
+                  ))}
                 </div>
               ) : (
-                <Empty description="暂无时段分布数据" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                <Empty description="暂无活跃用户数据" image={Empty.PRESENTED_IMAGE_SIMPLE} />
               )}
             </Card>
           </Col>
@@ -357,26 +271,43 @@ const MonitorAnalysisPage: React.FC = () => {
             <Card
               title={
                 <Space>
-                  <FireOutlined />
-                  高热度时段分析
+                  <BarChartOutlined />
+                  近7日数据统计
                 </Space>
               }
               style={{ borderRadius: 12 }}
             >
-              {heatPoints.length > 0 ? (
-                <Table
-                  columns={heatPointColumns}
-                  dataSource={heatPoints}
-                  rowKey={(record, idx) => `${record.start_time}-${idx}`}
-                  pagination={{
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    showTotal: (total) => `共 ${total} 个高热度时段`,
-                  }}
-                  scroll={{ x: 800 }}
-                />
+              {dailyStats.length > 0 ? (
+                <Row gutter={[16, 16]}>
+                  {dailyStats.slice(0, 7).map((stat, idx) => (
+                    <Col xs={24} sm={12} md={8} lg={Math.floor(24 / Math.min(dailyStats.length, 7))} key={idx}>
+                      <Card size="small" style={{ textAlign: 'center' }}>
+                        <div style={{ color: '#999', fontSize: 12, marginBottom: 8 }}>
+                          {stat.date}
+                        </div>
+                        <div style={{ fontSize: 28, fontWeight: 'bold', color: '#1890ff' }}>
+                          {stat.count}
+                        </div>
+                        <Progress
+                          percent={
+                            dailyStats.length > 0
+                              ? Math.round(
+                                  (stat.count /
+                                    Math.max(...dailyStats.map((s) => s.count))) *
+                                    100
+                                )
+                              : 0
+                          }
+                          size="small"
+                          showInfo={false}
+                          style={{ marginTop: 8 }}
+                        />
+                      </Card>
+                    </Col>
+                  ))}
+                </Row>
               ) : (
-                <Empty description="暂无高热度时段数据" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                <Empty description="暂无每日统计数据" image={Empty.PRESENTED_IMAGE_SIMPLE} />
               )}
             </Card>
           </Col>

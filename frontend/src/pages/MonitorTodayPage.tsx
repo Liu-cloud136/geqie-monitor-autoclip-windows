@@ -11,7 +11,6 @@ import {
   Button,
   DatePicker,
   Space,
-  Pagination,
   Empty
 } from 'antd'
 import {
@@ -25,41 +24,51 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 
-import { monitorApiService, TodayStats, DanmakuRecord, TopUser, DailyStat } from '../services/monitorApi'
+import { monitorApiService, DanmakuRecord, TotalStats, DailyStat, TopUser } from '../services/monitorApi'
 
 const MonitorTodayPage: React.FC = () => {
   const [loading, setLoading] = useState(false)
-  const [stats, setStats] = useState<TodayStats | null>(null)
-  const [records, setRecords] = useState<DanmakuRecord[]>([])
-  const [topUsers, setTopUsers] = useState<TopUser[]>([])
+  const [todayData, setTodayData] = useState<DanmakuRecord[]>([])
+  const [totalStats, setTotalStats] = useState<TotalStats | null>(null)
   const [dailyStats, setDailyStats] = useState<DailyStat[]>([])
+  const [topUsers, setTopUsers] = useState<TopUser[]>([])
   const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'))
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(20)
-  const [totalRecords, setTotalRecords] = useState(0)
 
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [statsRes, recordsRes, topUsersRes, dailyStatsRes] = await Promise.all([
-        monitorApiService.getTodayStats(),
-        monitorApiService.getTodayRecords(currentPage, pageSize),
-        monitorApiService.getTopUsers(5),
-        monitorApiService.getDailyStats(7),
+      const [todayRes, statsRes] = await Promise.all([
+        monitorApiService.getTodayData(),
+        monitorApiService.getStats(7),
       ])
 
-      setStats(statsRes)
-      setRecords(recordsRes.data)
-      setTotalRecords(recordsRes.total)
-      setTopUsers(topUsersRes)
-      setDailyStats(dailyStatsRes)
+      if (todayRes.success) {
+        setTodayData(todayRes.data)
+      }
+
+      if (statsRes.success) {
+        setTotalStats(statsRes.total_stats)
+        setDailyStats(statsRes.daily_stats)
+        
+        const recentData = statsRes.recent_data || []
+        const userCountMap: Record<string, number> = {}
+        recentData.forEach((item) => {
+          const username = item.username || '未知用户'
+          userCountMap[username] = (userCountMap[username] || 0) + 1
+        })
+        const userList = Object.entries(userCountMap)
+          .map(([username, count]) => ({ username, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5)
+        setTopUsers(userList)
+      }
     } catch (error) {
       console.error('Failed to load today data:', error)
-      message.error('加载今日数据失败')
+      message.error('加载今日数据失败，请确保监控服务已启动')
     } finally {
       setLoading(false)
     }
-  }, [currentPage, pageSize])
+  }, [])
 
   useEffect(() => {
     loadData()
@@ -94,11 +103,12 @@ const MonitorTodayPage: React.FC = () => {
       width: 100,
       align: 'center',
       render: (rating: number) => {
+        const r = rating ?? 0
         let color = 'default'
-        if (rating >= 8) color = 'success'
-        else if (rating >= 5) color = 'warning'
+        if (r >= 8) color = 'success'
+        else if (r >= 5) color = 'warning'
         else color = 'error'
-        return <Tag color={color}>{rating}分</Tag>
+        return <Tag color={color}>{r}分</Tag>
       },
     },
     {
@@ -162,7 +172,7 @@ const MonitorTodayPage: React.FC = () => {
                 <Card style={statCardStyle}>
                   <Statistic
                     title="今日鸽切"
-                    value={stats?.today_count || 0}
+                    value={totalStats?.today_count ?? todayData.length}
                     prefix={<CalendarOutlined style={{ color: '#52c41a' }} />}
                     valueStyle={{ color: '#52c41a' }}
                   />
@@ -172,7 +182,7 @@ const MonitorTodayPage: React.FC = () => {
                 <Card style={statCardStyle}>
                   <Statistic
                     title="总鸽切次数"
-                    value={stats?.total_count || 0}
+                    value={totalStats?.total_count ?? 0}
                     prefix={<BarChartOutlined style={{ color: '#1890ff' }} />}
                     valueStyle={{ color: '#1890ff' }}
                   />
@@ -182,7 +192,7 @@ const MonitorTodayPage: React.FC = () => {
                 <Card style={statCardStyle}>
                   <Statistic
                     title="本周鸽切"
-                    value={stats?.week_count || 0}
+                    value={totalStats?.week_count ?? 0}
                     prefix={<HistoryOutlined style={{ color: '#faad14' }} />}
                     valueStyle={{ color: '#faad14' }}
                   />
@@ -192,7 +202,7 @@ const MonitorTodayPage: React.FC = () => {
                 <Card style={statCardStyle}>
                   <Statistic
                     title="最活跃用户"
-                    value={stats?.top_user_count || 0}
+                    value={totalStats?.top_user ?? '-'}
                     prefix={<TrophyOutlined style={{ color: '#722ed1' }} />}
                     valueStyle={{ color: '#722ed1' }}
                   />
@@ -214,39 +224,35 @@ const MonitorTodayPage: React.FC = () => {
             }
             extra={
               <Tag color="blue">
-                共 {totalRecords} 条记录
+                共 {todayData.length} 条记录
               </Tag>
             }
             style={{ borderRadius: 12 }}
           >
             <Spin spinning={loading}>
-              {records.length > 0 ? (
-                <>
-                  <Table
-                    columns={columns}
-                    dataSource={records}
-                    rowKey="id"
-                    pagination={false}
-                    size="small"
-                    scroll={{ x: 600 }}
-                  />
-                  <div style={{ marginTop: 16, textAlign: 'right' }}>
-                    <Pagination
-                      current={currentPage}
-                      pageSize={pageSize}
-                      total={totalRecords}
-                      showSizeChanger
-                      showQuickJumper
-                      showTotal={(total) => `共 ${total} 条`}
-                      onChange={(page, size) => {
-                        setCurrentPage(page)
-                        setPageSize(size)
-                      }}
-                    />
-                  </div>
-                </>
+              {todayData.length > 0 ? (
+                <Table
+                  columns={columns}
+                  dataSource={todayData}
+                  rowKey="id"
+                  pagination={{
+                    pageSize: 20,
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                    showTotal: (total) => `共 ${total} 条记录`,
+                  }}
+                  size="small"
+                  scroll={{ x: 600 }}
+                />
               ) : (
-                <Empty description="暂无今日数据" />
+                <Empty
+                  description={
+                    <div>
+                      <p>暂无今日数据</p>
+                      <p style={{ color: '#999', fontSize: 12 }}>请确保监控服务已启动且配置正确</p>
+                    </div>
+                  }
+                />
               )}
             </Spin>
           </Card>
@@ -308,7 +314,7 @@ const MonitorTodayPage: React.FC = () => {
           >
             <div style={{ textAlign: 'center', padding: '16px 0' }}>
               <div style={{ fontSize: 24, fontWeight: 'bold', color: '#52c41a' }}>
-                {stats?.today_avg || '--'}
+                {totalStats?.today_avg ?? '--'}
               </div>
               <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
                 今日平均

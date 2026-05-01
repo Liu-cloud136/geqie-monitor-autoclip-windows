@@ -33,12 +33,18 @@ const { TabPane } = Tabs
 const MonitorMultiRoomPage: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [rooms, setRooms] = useState<RoomInfo[]>([])
+  const [globalStats, setGlobalStats] = useState<{
+    total_rooms: number
+    active_rooms: number
+    monitoring_rooms: number
+    total_danmaku: number
+    total_keyword_matches: number
+  } | null>(null)
   const [selectedRoom, setSelectedRoom] = useState<RoomInfo | null>(null)
   const [roomDetailVisible, setRoomDetailVisible] = useState(false)
   const [roomDetailLoading, setRoomDetailLoading] = useState(false)
   const [roomTodayRecords, setRoomTodayRecords] = useState<DanmakuRecord[]>([])
   const [roomTopUsers, setRoomTopUsers] = useState<TopUser[]>([])
-  const [roomDailyStats, setRoomDailyStats] = useState<DailyStat[]>([])
   const [activeTab, setActiveTab] = useState('overview')
 
   const loadRooms = async () => {
@@ -46,11 +52,12 @@ const MonitorMultiRoomPage: React.FC = () => {
     try {
       const result = await monitorApiService.getMultiRoomStatus()
       if (result.success) {
-        setRooms(result.data.rooms)
+        setRooms(result.data.rooms || [])
+        setGlobalStats(result.data.global_stats || null)
       }
     } catch (error) {
       console.error('Failed to load multi-room data:', error)
-      message.error('加载多房间数据失败')
+      message.error('加载多房间数据失败，请确保监控服务已启动')
     } finally {
       setLoading(false)
     }
@@ -68,12 +75,11 @@ const MonitorMultiRoomPage: React.FC = () => {
     try {
       const [statsRes, todayRes] = await Promise.all([
         monitorApiService.getRoomStats(room.room_id, 7),
-        monitorApiService.getRoomTodayRecords(room.room_id),
+        monitorApiService.getRoomTodayData(room.room_id),
       ])
 
       if (statsRes.success) {
-        setRoomTopUsers(statsRes.room_stats.top_users)
-        setRoomDailyStats(statsRes.room_stats.daily_stats)
+        setRoomTopUsers(statsRes.room_stats?.top_users || [])
       }
 
       if (todayRes.success) {
@@ -116,11 +122,12 @@ const MonitorMultiRoomPage: React.FC = () => {
       width: 100,
       align: 'center',
       render: (rating: number) => {
+        const r = rating ?? 0
         let color = 'default'
-        if (rating >= 8) color = 'success'
-        else if (rating >= 5) color = 'warning'
+        if (r >= 8) color = 'success'
+        else if (r >= 5) color = 'warning'
         else color = 'error'
-        return <Tag color={color}>{rating}分</Tag>
+        return <Tag color={color}>{r}分</Tag>
       },
     },
   ]
@@ -159,7 +166,7 @@ const MonitorMultiRoomPage: React.FC = () => {
           <Card style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
             <Statistic
               title="监控房间数"
-              value={rooms.length}
+              value={globalStats?.total_rooms ?? rooms.length}
               prefix={<HomeOutlined style={{ color: '#1890ff' }} />}
               valueStyle={{ color: '#1890ff' }}
             />
@@ -169,7 +176,7 @@ const MonitorMultiRoomPage: React.FC = () => {
           <Card style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
             <Statistic
               title="直播中房间"
-              value={rooms.filter(r => r.is_live).length}
+              value={globalStats?.active_rooms ?? rooms.filter(r => r.is_live).length}
               prefix={<VideoCameraOutlined style={{ color: '#52c41a' }} />}
               valueStyle={{ color: '#52c41a' }}
             />
@@ -179,7 +186,7 @@ const MonitorMultiRoomPage: React.FC = () => {
           <Card style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
             <Statistic
               title="今日总数据"
-              value={rooms.reduce((sum, r) => sum + (r.db_today_count || 0), 0)}
+              value={globalStats?.total_danmaku ?? rooms.reduce((sum, r) => sum + (r.db_today_count || 0), 0)}
               prefix={<BarChartOutlined style={{ color: '#faad14' }} />}
               valueStyle={{ color: '#faad14' }}
             />
@@ -189,7 +196,7 @@ const MonitorMultiRoomPage: React.FC = () => {
           <Card style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
             <Statistic
               title="关键词匹配"
-              value={rooms.reduce((sum, r) => sum + (r.keyword_count || 0), 0)}
+              value={globalStats?.total_keyword_matches ?? rooms.reduce((sum, r) => sum + (r.keyword_count || 0), 0)}
               prefix={<EyeOutlined style={{ color: '#722ed1' }} />}
               valueStyle={{ color: '#722ed1' }}
             />
@@ -264,7 +271,14 @@ const MonitorMultiRoomPage: React.FC = () => {
                   ))}
                 </Row>
               ) : (
-                <Empty description="暂未配置多房间监控" />
+                <Empty
+                  description={
+                    <div>
+                      <p>暂未配置多房间监控</p>
+                      <p style={{ color: '#999', fontSize: 12 }}>请确保监控服务已启动且配置了多房间</p>
+                    </div>
+                  }
+                />
               )}
             </Spin>
           </TabPane>
@@ -381,7 +395,7 @@ const MonitorMultiRoomPage: React.FC = () => {
                   >
                     {roomTopUsers.length > 0 ? (
                       <div style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                        {roomTopUsers.map((user, index) => (
+                        {roomTopUsers.slice(0, 5).map((user, index) => (
                           <div
                             key={user.username}
                             style={{
@@ -389,7 +403,7 @@ const MonitorMultiRoomPage: React.FC = () => {
                               justifyContent: 'space-between',
                               alignItems: 'center',
                               padding: '8px 0',
-                              borderBottom: index < roomTopUsers.length - 1 ? '1px solid #f0f0f0' : 'none',
+                              borderBottom: index < Math.min(roomTopUsers.length - 1, 4) ? '1px solid #f0f0f0' : 'none',
                             }}
                           >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
