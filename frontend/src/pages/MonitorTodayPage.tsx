@@ -50,7 +50,8 @@ const MonitorTodayPage: React.FC = () => {
         setTotalStats(statsRes.total_stats)
         setDailyStats(statsRes.daily_stats)
         
-        const recentData = statsRes.recent_data || []
+        // 安全地处理 recent_data，确保是数组
+        const recentData = Array.isArray(statsRes.recent_data) ? statsRes.recent_data : []
         const userCountMap: Record<string, number> = {}
         recentData.forEach((item) => {
           const username = item.username || '未知用户'

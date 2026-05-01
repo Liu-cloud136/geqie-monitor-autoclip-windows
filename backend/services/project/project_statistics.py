@@ -170,12 +170,23 @@ class ProjectStatisticsMixin:
             return None
         
         from datetime import timezone
-        import pytz
         
-        # 由于SQLite存储时丢失了时区信息，我们假设这些时间是UTC时间
-        # 将其转换为本地时间
-        local_tz = pytz.timezone('Asia/Shanghai')
-        utc_time = dt.replace(tzinfo=timezone.utc)
-        local_time = utc_time.astimezone(local_tz)
-        
-        return local_time
+        # 尝试使用 zoneinfo 模块（Python 3.9+ 标准库）
+        try:
+            from zoneinfo import ZoneInfo
+            local_tz = ZoneInfo('Asia/Shanghai')
+            utc_time = dt.replace(tzinfo=timezone.utc)
+            local_time = utc_time.astimezone(local_tz)
+            return local_time
+        except (ImportError, Exception):
+            # zoneinfo 不可用，尝试使用 pytz
+            try:
+                import pytz
+                local_tz = pytz.timezone('Asia/Shanghai')
+                utc_time = dt.replace(tzinfo=timezone.utc)
+                local_time = utc_time.astimezone(local_tz)
+                return local_time
+            except (ImportError, Exception):
+                # 如果都不可用，返回原始时间（不带时区）
+                logger.warning("无法进行时区转换，zoneinfo 和 pytz 都不可用")
+                return dt
