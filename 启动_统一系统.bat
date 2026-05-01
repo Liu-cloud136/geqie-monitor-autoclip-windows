@@ -1,186 +1,169 @@
 @echo off
 chcp 65001 >nul
-title AutoClip 全能系统 - 统一启动脚本
+title AutoClip System - Unified Launcher
 
 echo.
-echo ╔═══════════════════════════════════════════════════════════════╗
-echo ║                                                                   ║
-echo ║      █████╗ ██╗   ██╗████████╗ ██████╗  ██████╗ ██╗     ║
-echo ║     ██╔══██╗██║   ██║╚══██╔══╝██╔═══██╗██╔═══██╗██║     ║
-echo ║     ███████║██║   ██║   ██║   ██║   ██║██║   ██║██║     ║
-echo ║     ██╔══██║██║   ██║   ██║   ██║   ██║██║   ██║██║     ║
-echo ║     ██║  ██║╚██████╔╝   ██║   ╚██████╔╝╚██████╔╝███████╗║
-echo ║     ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝║
-echo ║                                                                   ║
-echo ║                    全能系统 - 弹幕监控 + AI 视频切片                   ║
-echo ╚═══════════════════════════════════════════════════════════════╝
+echo ========================================
+echo   AutoClip System - All-in-One
+echo   Danmaku Monitor + AI Video Clipping
+echo ========================================
 echo.
 
 set SCRIPT_DIR=%~dp0
 set VENV_DIR=%SCRIPT_DIR%venv
 
-echo [INFO] 脚本目录: %SCRIPT_DIR%
-echo [INFO] 虚拟环境目录: %VENV_DIR%
+echo [INFO] Script Directory: %SCRIPT_DIR%
+echo [INFO] Virtual Environment: %VENV_DIR%
 echo.
 
 echo ========================================
-echo [步骤 1/6: 环境检查
+echo [Step 1/6] Environment Check
 echo ========================================
 echo.
 
 if not exist "%VENV_DIR%\Scripts\python.exe" (
-    echo [ERROR] 虚拟环境未找到
-    echo [ERROR] 期望路径: %VENV_DIR%\Scripts\python.exe
+    echo [ERROR] Virtual environment not found!
+    echo [ERROR] Expected: %VENV_DIR%\Scripts\python.exe
     echo.
-    echo [提示] 请先运行 install.bat 安装依赖
+    echo [Hint] Please run install.bat first to install dependencies.
     pause
     exit /b 1
 )
-echo [OK] 虚拟环境已就绪
+echo [OK] Virtual environment is ready
 echo.
 
 echo ========================================
-echo [步骤 2/6: 检查 Redis]
+echo [Step 2/6] Check Redis
 echo ========================================
 echo.
 
 redis-cli ping >nul 2>&1
 if errorlevel 1 (
-    echo [WARNING] Redis 未运行或未安装
-    echo [WARNING] Celery 任务队列需要 Redis
-    echo [WARNING] 请先启动 Redis 服务
-    echo.
-    echo [提示] 如果没有 Redis，视频处理功能将不可用
+    echo [WARNING] Redis is not running or not installed
+    echo [WARNING] Celery task queue requires Redis
+    echo [WARNING] Video processing features will be unavailable
     echo.
     set REDIS_READY=0
 ) else (
-    echo [OK] Redis 已就绪
+    echo [OK] Redis is ready
     echo.
     set REDIS_READY=1
 )
 
 echo ========================================
-echo [步骤 3/6: 检查 FFmpeg]
+echo [Step 3/6] Check FFmpeg
 echo ========================================
 echo.
 
 ffmpeg -version >nul 2>&1
 if errorlevel 1 (
-    echo [WARNING] FFmpeg 未找到
-    echo [WARNING] 视频处理功能将不可用
-    echo.
-    echo [提示] 请下载 FFmpeg 并添加到系统 PATH
-    echo [提示] 下载地址: https://ffmpeg.org/download.html
+    echo [WARNING] FFmpeg not found
+    echo [WARNING] Video processing features will be unavailable
+    echo [WARNING] Please download FFmpeg and add to system PATH
     echo.
     set FFMPEG_READY=0
 ) else (
-    echo [OK] FFmpeg 已就绪
+    echo [OK] FFmpeg is ready
     echo.
     set FFMPEG_READY=1
 )
 
 echo ========================================
-echo [步骤 4/6: 准备启动
+echo [Step 4/6] Prepare to Start
 echo ========================================
 echo.
 
-echo [INFO] 即将启动以下服务:
-echo [INFO] 1. FastAPI 后端服务 (端口 8000)
-echo [INFO] 2. Celery 任务队列
-echo [INFO] 3. 前端开发服务器 (端口 5173)
-echo [INFO] 4. 弹幕监控服务 (端口 5000)
+echo [INFO] Starting the following services:
+echo [INFO] 1. FastAPI Backend (Port 8000)
+echo [INFO] 2. Celery Task Queue
+echo [INFO] 3. Frontend Dev Server (Port 5173)
+echo [INFO] 4. Danmaku Monitor Service (Port 5000)
 echo.
 
-echo [INFO] 每个服务将在独立的新窗口中启动
+echo [INFO] Each service will run in a separate window
 echo.
 
 timeout /t 3 /nobreak >nul
 
 echo ========================================
-echo [步骤 5/6: 启动服务
+echo [Step 5/6] Starting Services
 echo ========================================
 echo.
 
-echo [1/4] 启动 FastAPI 后端服务...
-start "AutoClip - FastAPI 后端" cmd /k "cd /d %SCRIPT_DIR% && echo 启动 FastAPI 后端... && echo URL: http://localhost:8000 && echo API 文档: http://localhost:8000/docs && echo 按 Ctrl+C 停止服务 && echo ======================================== && %VENV_DIR%\Scripts\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1"
+echo [1/4] Starting FastAPI Backend...
+start "AutoClip - FastAPI Backend" cmd /k "cd /d %SCRIPT_DIR%\backend && echo Starting FastAPI Backend... && echo URL: http://localhost:8000 && echo API Docs: http://localhost:8000/docs && echo Press Ctrl+C to stop && echo ======================================== && %VENV_DIR%\Scripts\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1"
 
-echo [OK] FastAPI 后端启动中...
+echo [OK] FastAPI Backend starting...
 timeout /t 3 /nobreak >nul
 
 if "%REDIS_READY%"=="1" (
-    echo [2/4] 启动 Celery 任务队列...
-    start "AutoClip - Celery Worker" cmd /k "cd /d %SCRIPT_DIR%\backend && echo 启动 Celery 任务队列... && echo 按 Ctrl+C 停止服务 && echo ======================================== && set PYTHONPATH=%CD% && %VENV_DIR%\Scripts\celery.exe -A core.celery_app worker --loglevel=info --concurrency=4"
-    echo [OK] Celery 启动中...
+    echo [2/4] Starting Celery Task Queue...
+    start "AutoClip - Celery Worker" cmd /k "cd /d %SCRIPT_DIR%\backend && echo Starting Celery Task Queue... && echo Press Ctrl+C to stop && echo ======================================== && set PYTHONPATH=%CD% && %VENV_DIR%\Scripts\celery.exe -A core.celery_app worker --loglevel=info --concurrency=4"
+    echo [OK] Celery starting...
 ) else (
-    echo [2/4] 跳过 Celery (Redis 未就绪，跳过)
+    echo [2/4] Skipping Celery (Redis not available)
 )
 timeout /t 2 /nobreak >nul
 
-echo [3/4] 启动前端开发服务器...
-start "AutoClip - 前端服务" cmd /k "cd /d %SCRIPT_DIR%\frontend && echo 启动前端开发服务器... && echo URL: http://localhost:5173 && echo 按 Ctrl+C 停止服务 && echo ======================================== && npm run dev"
-echo [OK] 前端服务启动中...
+echo [3/4] Starting Frontend Dev Server...
+start "AutoClip - Frontend" cmd /k "cd /d %SCRIPT_DIR%\frontend && echo Starting Frontend Dev Server... && echo URL: http://localhost:5173 && echo Press Ctrl+C to stop && echo ======================================== && npm run dev"
+echo [OK] Frontend starting...
 timeout /t 5 /nobreak >nul
 
-echo [4/4] 启动弹幕监控服务...
-start "AutoClip - 弹幕监控" cmd /k "cd /d %SCRIPT_DIR%\monitor && echo 启动弹幕监控服务... && echo URL: http://localhost:5000 && echo 按 Ctrl+C 停止服务 && echo ======================================== && %VENV_DIR%\Scripts\python.exe jk.py"
-echo [OK] 弹幕监控服务启动中...
+echo [4/4] Starting Danmaku Monitor Service...
+start "AutoClip - Danmaku Monitor" cmd /k "cd /d %SCRIPT_DIR%\monitor && echo Starting Danmaku Monitor Service... && echo URL: http://localhost:5000 && echo Press Ctrl+C to stop && echo ======================================== && %VENV_DIR%\Scripts\python.exe jk.py"
+echo [OK] Danmaku Monitor starting...
 echo.
 
 echo ========================================
-echo [步骤 6/6: 服务启动完成
+echo [Step 6/6] All Services Started!
 echo ========================================
 echo.
 
-echo ╔═══════════════════════════════════════════════════════════════╗
-echo ║                                                                   ║
-echo ║                        所有服务已启动！                             ║
-echo ║                                                                   ║
-echo ╠═══════════════════════════════════════════════════════════════╣
-echo ║                                                                   ║
-echo ║  🌐 统一前端入口:                                                ║
-echo ║     http://localhost:5173                                         ║
-echo ║                                                                   ║
-echo ╠═══════════════════════════════════════════════════════════════╣
-echo ║                                                                   ║
-echo ║  🔧 各服务地址:                                                  ║
-echo ║     FastAPI 后端:    http://localhost:8000                     ║
-echo ║     API 文档 (Swagger): http://localhost:8000/docs              ║
-echo ║     API ReDoc:         http://localhost:8000/redoc             ║
-echo ║     弹幕监控服务:      http://localhost:5000                     ║
-echo ║                                                                   ║
-echo ╠═══════════════════════════════════════════════════════════════╣
-echo ║                                                                   ║
-echo ║  🎯 功能模块:                                                    ║
-echo ║     - 弹幕监控: 今日数据、多房间监控、弹幕分析、历史数据         ║
-echo ║     - AI 切片: 项目管理、视频处理、智能评分、自动切片            ║
-echo ║     - 设置: LLM 配置、步骤配置、系统配置                          ║
-echo ║                                                                   ║
-echo ╠═══════════════════════════════════════════════════════════════╣
-echo ║                                                                   ║
-echo ║  ⚠️  注意事项:                                                    ║
-echo ║     - 关闭对应窗口以停止服务                                         ║
-echo ║     - 日志文件位于 logs/ 目录                                     ║
-echo ║     - 如需重新安装依赖，请删除 venv 文件夹并运行 install.bat     ║
-echo ║                                                                   ║
-echo ╚═══════════════════════════════════════════════════════════════╝
+echo ========================================
+echo Access URLs:
+echo ========================================
+echo.
+echo   Unified Frontend: http://localhost:5173
+echo.
+echo   FastAPI Backend:  http://localhost:8000
+echo   API Docs:         http://localhost:8000/docs
+echo   API ReDoc:        http://localhost:8000/redoc
+echo   Danmaku Monitor:  http://localhost:5000
+echo.
+echo ========================================
+echo Features:
+echo ========================================
+echo.
+echo   - Danmaku Monitor: Today Data, Multi-Room, Analysis, History
+echo   - AI Video Clip: Project Management, Video Processing, Smart Scoring
+echo   - Settings: LLM Config, Step Config, System Config
+echo.
+echo ========================================
+echo Notes:
+echo ========================================
+echo.
+echo   - Close the corresponding windows to stop services
+echo   - Log files are in logs/ directory
+echo   - To reinstall dependencies, delete venv folder and run install.bat
 echo.
 
-echo [INFO] 等待前端服务完全启动...
+echo [INFO] Waiting for frontend to be ready...
 timeout /t 3 /nobreak >nul
 
-echo [INFO] 正在打开浏览器...
+echo [INFO] Opening browser...
 start http://localhost:5173
 
 echo.
-echo [INFO] 浏览器已打开。关闭对应窗口以停止服务。
+echo [INFO] Browser opened. Close the corresponding windows to stop services.
 echo.
 echo ========================================
-echo [提示]
+echo Hints:
 echo ========================================
 echo.
-echo - 统一前端入口: http://localhost:5173
-echo - 导航栏可切换: 弹幕监控 / AI 切片 / 设置
-echo - 弹幕监控下拉菜单包含: 今日数据、多房间监控、弹幕分析、历史数据
+echo - Unified Frontend: http://localhost:5173
+echo - Navigation: Danmaku Monitor / AI Clip / Settings
+echo - Danmaku Monitor dropdown contains: Today, Multi-Room, Analysis, History
 echo.
 echo ========================================
 pause
