@@ -4,10 +4,12 @@
  */
 
 import React from 'react'
-import { Card, Title, Text, Radio, Empty, Tag, Button } from 'antd'
+import { Card, Radio, Empty, Tag, Button, Typography } from 'antd'
 import { PlayCircleOutlined, VideoCameraOutlined } from '@ant-design/icons'
 import ClipCard from '../components/ClipCard'
 import { Clip } from '../types/api'
+
+const { Title, Text } = Typography
 
 /**
  * 切片列表标签页组件属性

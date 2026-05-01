@@ -22,13 +22,26 @@ import {
   Spin,
 } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
+import { CheckCircleOutlined, LoadingOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
 
 // 导入拆分后的模块
-import { useProcessingProgress } from '../hooks/useProcessingProgress'
+import { useProcessingProgress, StepStatus } from '../hooks/useProcessingProgress'
 
 const { Content } = Layout
 const { Title, Text } = Typography
 const { Step } = Steps
+
+/**
+ * 根据步骤状态获取图标
+ * @param stepStatus - 步骤状态
+ * @returns React组件
+ */
+const getStepIcon = (stepStatus: StepStatus) => {
+  if (stepStatus === 'finish') return <CheckCircleOutlined />
+  if (stepStatus === 'process') return <LoadingOutlined />
+  if (stepStatus === 'error') return <ExclamationCircleOutlined />
+  return null
+}
 
 /**
  * 处理进度页面组件
@@ -43,8 +56,7 @@ const ProcessingPage: React.FC = () => {
     status,
     loading,
     steps,
-    getStepStatus,
-    getStepIcon
+    getStepStatus
   } = useProcessingProgress()
 
   if (loading) {
@@ -137,7 +149,7 @@ const ProcessingPage: React.FC = () => {
                     title={step.title}
                     description={step.description}
                     status={getStepStatus(index)}
-                    icon={getStepIcon(index)}
+                    icon={getStepIcon(getStepStatus(index))}
                   />
                 ))}
               </Steps>

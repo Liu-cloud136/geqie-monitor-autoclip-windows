@@ -3,11 +3,9 @@
  * 提供处理进度页面的状态管理和业务逻辑
  */
 
-import React from 'react'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { message } from 'antd'
-import { CheckCircleOutlined, LoadingOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
 import { projectApi } from '../services/api'
 import { useProjectStore } from '../store/useProjectStore'
 import { useWebSocket, ProgressUpdateMessage, SystemNotificationMessage } from '../hooks/useWebSocket'
@@ -26,6 +24,11 @@ export interface ProcessingStatus {
 }
 
 /**
+ * 步骤状态类型
+ */
+export type StepStatus = 'wait' | 'process' | 'finish' | 'error'
+
+/**
  * 处理进度页面的状态和操作
  */
 export interface ProcessingProgressState {
@@ -33,8 +36,7 @@ export interface ProcessingProgressState {
   status: ProcessingStatus | null
   loading: boolean
   steps: { title: string; description: string }[]
-  getStepStatus: (stepIndex: number) => 'wait' | 'process' | 'finish' | 'error'
-  getStepIcon: (stepIndex: number) => React.ReactNode
+  getStepStatus: (stepIndex: number) => StepStatus
 }
 
 /**
@@ -191,7 +193,7 @@ export const useProcessingProgress = (): ProcessingProgressState => {
     }
   }
 
-  const getStepStatus = (stepIndex: number): 'wait' | 'process' | 'finish' | 'error' => {
+  const getStepStatus = (stepIndex: number): StepStatus => {
     if (!status) return 'wait'
     
     if (status.status === 'error') {
@@ -208,21 +210,11 @@ export const useProcessingProgress = (): ProcessingProgressState => {
     return 'wait'
   }
 
-  const getStepIcon = (stepIndex: number) => {
-    const stepStatus = getStepStatus(stepIndex)
-    
-    if (stepStatus === 'finish') return <CheckCircleOutlined />
-    if (stepStatus === 'process') return <LoadingOutlined />
-    if (stepStatus === 'error') return <ExclamationCircleOutlined />
-    return null
-  }
-
   return {
     currentProject,
     status,
     loading,
     steps,
-    getStepStatus,
-    getStepIcon
+    getStepStatus
   }
 }

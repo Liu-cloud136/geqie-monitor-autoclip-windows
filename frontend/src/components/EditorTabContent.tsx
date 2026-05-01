@@ -4,9 +4,11 @@
  */
 
 import React from 'react'
-import { Card, Empty, Text } from 'antd'
+import { Card, Empty, Typography } from 'antd'
 import { VideoCameraOutlined } from '@ant-design/icons'
 import TimelineEditor from '../components/TimelineEditor'
+
+const { Text } = Typography
 
 /**
  * 时间轴编辑标签页组件属性
