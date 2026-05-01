@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
-import { Layout } from 'antd'
+import { Layout, App as AntApp } from 'antd'
 import HomePage from './pages/HomePage'
 import ProjectDetailPage from './pages/ProjectDetailPage'
 import ClipDetailPage from './pages/ClipDetailPage'
@@ -14,7 +14,7 @@ import Header from './components/Header'
 
 const { Content } = Layout
 
-function App() {
+function AppContent() {
   console.log('🎬 App组件已加载');
   
   return (
@@ -36,6 +36,14 @@ function App() {
         </Routes>
       </Content>
     </Layout>
+  )
+}
+
+function App() {
+  return (
+    <AntApp>
+      <AppContent />
+    </AntApp>
   )
 }
 

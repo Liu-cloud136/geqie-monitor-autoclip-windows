@@ -130,9 +130,9 @@ const MonitorAnalysisPage: React.FC = () => {
       
       if (result.success) {
         setTotalStats(result.total_stats)
-        setDailyStats(result.daily_stats || [])
+        setDailyStats(Array.isArray(result.daily_stats) ? result.daily_stats : [])
         
-        const recentData = result.recent_data || []
+        const recentData = Array.isArray(result.recent_data) ? result.recent_data : []
         const userCountMap: Record<string, number> = {}
         const keywordMap: Record<string, number> = {}
         
