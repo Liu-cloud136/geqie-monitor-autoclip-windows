@@ -1,0 +1,284 @@
+import React, { useState, useEffect } from 'react'
+import {
+  Card,
+  DatePicker,
+  Table,
+  Tag,
+  Spin,
+  message,
+  Button,
+  Space,
+  Row,
+  Col,
+  Statistic,
+  Empty,
+  Pagination
+} from 'antd'
+import {
+  HistoryOutlined,
+  ReloadOutlined,
+  DownloadOutlined,
+  CalendarOutlined,
+  EyeOutlined
+} from '@ant-design/icons'
+import type { ColumnsType } from 'antd/es/table'
+import dayjs from 'dayjs'
+
+import { monitorApiService, DanmakuRecord } from '../services/monitorApi'
+
+const MonitorHistoryPage: React.FC = () => {
+  const [loading, setLoading] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'))
+  const [records, setRecords] = useState<DanmakuRecord[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+
+  const loadHistoryData = async () => {
+    if (!selectedDate) {
+      message.warning('请选择日期')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const result = await monitorApiService.getDateData(selectedDate)
+      if (result.success) {
+        setRecords(result.data)
+      }
+    } catch (error) {
+      console.error('Failed to load history data:', error)
+      message.error('加载历史数据失败，请确保监控服务已启动')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadHistoryData()
+  }, [selectedDate])
+
+  const columns: ColumnsType<DanmakuRecord> = [
+    {
+      title: '时间',
+      dataIndex: 'time_display',
+      key: 'time_display',
+      width: 120,
+    },
+    {
+      title: '用户',
+      dataIndex: 'username',
+      key: 'username',
+      width: 150,
+      render: (text: string) => (
+        <Tag color="blue">{text || '未知用户'}</Tag>
+      ),
+    },
+    {
+      title: '内容',
+      dataIndex: 'content',
+      key: 'content',
+      ellipsis: true,
+    },
+    {
+      title: '评分',
+      dataIndex: 'rating',
+      key: 'rating',
+      width: 100,
+      align: 'center',
+      render: (rating: number) => {
+        const r = rating ?? 0
+        let color = 'default'
+        if (r >= 8) color = 'success'
+        else if (r >= 5) color = 'warning'
+        else color = 'error'
+        return <Tag color={color}>{r}分</Tag>
+      },
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'datetime_display',
+      key: 'datetime_display',
+      width: 180,
+      render: (time: string) => (
+        <span style={{ color: '#999', fontSize: 12 }}>
+          {time || '-'}
+        </span>
+      ),
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 100,
+      align: 'center',
+      render: (_, record) => (
+        <Button
+          type="link"
+          size="small"
+          icon={<EyeOutlined />}
+          onClick={() => {
+            if (record.reason) {
+              message.info(`不切原因: ${record.reason}`)
+            } else {
+              message.info('暂无不切原因')
+            }
+          }}
+        >
+          详情
+        </Button>
+      ),
+    },
+  ]
+
+  const handleExport = () => {
+    message.info('导出功能开发中')
+  }
+
+  const paginatedRecords = records.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  )
+
+  return (
+    <div style={{ padding: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <h2 style={{ margin: 0 }}>
+          <HistoryOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+          历史数据查询
+        </h2>
+        <Space>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={handleExport}
+          >
+            导出数据
+          </Button>
+        </Space>
+      </div>
+
+      <Card style={{ borderRadius: 12, marginBottom: 24 }}>
+        <Row gutter={[16, 16]} align="middle">
+          <Col xs={24} sm={12}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <CalendarOutlined style={{ fontSize: 24, color: '#1890ff' }} />
+              <div>
+                <div style={{ color: '#999', fontSize: 12, marginBottom: 4 }}>选择日期</div>
+                <DatePicker
+                  value={dayjs(selectedDate)}
+                  onChange={(date) => {
+                    if (date) {
+                      setSelectedDate(date.format('YYYY-MM-DD'))
+                      setCurrentPage(1)
+                    }
+                  }}
+                  allowClear={false}
+                  style={{ width: 200 }}
+                  size="large"
+                />
+              </div>
+            </div>
+          </Col>
+          <Col xs={24} sm={12}>
+            <div style={{ textAlign: 'right' }}>
+              <Button
+                type="primary"
+                icon={<ReloadOutlined />}
+                onClick={loadHistoryData}
+                loading={loading}
+                size="large"
+              >
+                查询数据
+              </Button>
+            </div>
+          </Col>
+        </Row>
+      </Card>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={12} sm={6}>
+          <Card style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+            <Statistic
+              title="查询日期"
+              value={selectedDate}
+              prefix={<CalendarOutlined style={{ color: '#1890ff' }} />}
+              valueStyle={{ color: '#1890ff', fontSize: 20 }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+            <Statistic
+              title="数据总数"
+              value={records.length}
+              prefix={<HistoryOutlined style={{ color: '#52c41a' }} />}
+              valueStyle={{ color: '#52c41a' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+            <Statistic
+              title="当前页"
+              value={currentPage}
+              suffix={`/ ${Math.ceil(records.length / pageSize) || 1}`}
+              prefix={<EyeOutlined style={{ color: '#faad14' }} />}
+              valueStyle={{ color: '#faad14' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+            <Statistic
+              title="每页显示"
+              value={pageSize}
+              suffix="条"
+              prefix={<HistoryOutlined style={{ color: '#722ed1' }} />}
+              valueStyle={{ color: '#722ed1' }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Card style={{ borderRadius: 12 }}>
+        <Spin spinning={loading}>
+          {records.length > 0 ? (
+            <>
+              <Table
+                columns={columns}
+                dataSource={paginatedRecords}
+                rowKey="id"
+                pagination={false}
+                size="small"
+                scroll={{ x: 800 }}
+              />
+              <div style={{ marginTop: 16, textAlign: 'right' }}>
+                <Pagination
+                  current={currentPage}
+                  pageSize={pageSize}
+                  total={records.length}
+                  showSizeChanger
+                  showQuickJumper
+                  showTotal={(total) => `共 ${total} 条记录`}
+                  onChange={(page, size) => {
+                    setCurrentPage(page)
+                    setPageSize(size)
+                  }}
+                />
+              </div>
+            </>
+          ) : (
+            <Empty
+              description={
+                <div>
+                  <p>该日期暂无历史数据</p>
+                  <p style={{ color: '#999', fontSize: 12 }}>请选择其他日期查询</p>
+                </div>
+              }
+            />
+          )}
+        </Spin>
+      </Card>
+    </div>
+  )
+}
+
+export default MonitorHistoryPage

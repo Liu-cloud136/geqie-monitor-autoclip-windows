@@ -1,12 +1,14 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// 获取后端地址，优先使用环境变量，否则使用 localhost
 const getBackendUrl = () => {
   return process.env.VITE_BACKEND_URL || 'http://localhost:8000'
 }
 
-// https://vitejs.dev/config/
+const getMonitorUrl = () => {
+  return process.env.VITE_MONITOR_URL || 'http://localhost:5000'
+}
+
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -17,18 +19,20 @@ export default defineConfig({
         target: getBackendUrl(),
         changeOrigin: true,
         secure: false,
+        ws: true
+      },
+      '/monitor-api': {
+        target: getMonitorUrl(),
+        changeOrigin: true,
+        secure: false,
         ws: true,
-        configure: (proxy, options) => {
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            console.log('代理请求:', req.method, req.url, '->', options.target + req.url)
-          })
-          proxy.on('proxyRes', (proxyRes, req, res) => {
-            console.log('代理响应:', proxyRes.statusCode, req.url)
-          })
-          proxy.on('error', (err, req, res) => {
-            console.error('代理错误:', err)
-          })
-        }
+        rewrite: (path) => path.replace(/^\/monitor-api/, '/api')
+      },
+      '/monitor-static': {
+        target: getMonitorUrl(),
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/monitor-static/, '/static')
       }
     },
     allowedHosts: [
