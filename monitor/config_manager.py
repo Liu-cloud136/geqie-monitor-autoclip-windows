@@ -142,6 +142,104 @@ class ConfigManager:
         self._last_modified = 0
         return self._load_config()
 
+    def save_config(self, config: Dict) -> bool:
+        """保存配置到文件"""
+        try:
+            with open(self._config_path, 'w', encoding='utf-8') as f:
+                yaml.dump(config, f, allow_unicode=True, default_flow_style=False, sort_keys=False, indent=2)
+            self._config = config
+            self._last_modified = os.path.getmtime(self._config_path)
+            logging.info(f"✓ 配置文件已保存: {os.path.abspath(self._config_path)}")
+            
+            for watcher in self._watchers:
+                try:
+                    watcher(self._config)
+                except Exception as e:
+                    logging.error(f"配置观察者执行失败: {e}")
+            
+            return True
+        except Exception as e:
+            logging.error(f"❌ 保存配置文件失败: {e}")
+            return False
+
+    def update_room_config(self, room_id: int, updates: Dict) -> bool:
+        """更新指定房间的配置"""
+        config = self.get_config()
+        
+        if 'multi_room' not in config:
+            config['multi_room'] = {'enable': True, 'rooms': []}
+        
+        if 'rooms' not in config['multi_room']:
+            config['multi_room']['rooms'] = []
+        
+        rooms = config['multi_room']['rooms']
+        found = False
+        
+        for i, room in enumerate(rooms):
+            if isinstance(room, dict) and int(room.get('room_id', 0)) == room_id:
+                rooms[i].update(updates)
+                found = True
+                break
+        
+        if not found:
+            logging.warning(f"⚠️ 未找到房间 {room_id}，无法更新配置")
+            return False
+        
+        return self.save_config(config)
+
+    def add_room_config(self, room_data: Dict) -> bool:
+        """添加新房间配置"""
+        config = self.get_config()
+        
+        if 'multi_room' not in config:
+            config['multi_room'] = {'enable': True, 'rooms': []}
+        
+        if 'rooms' not in config['multi_room']:
+            config['multi_room']['rooms'] = []
+        
+        room_id = room_data.get('room_id')
+        if not room_id:
+            logging.error("❌ 房间ID不能为空")
+            return False
+        
+        for room in config['multi_room']['rooms']:
+            if isinstance(room, dict) and int(room.get('room_id', 0)) == int(room_id):
+                logging.warning(f"⚠️ 房间 {room_id} 已存在")
+                return False
+        
+        new_room = {
+            'room_id': int(room_id),
+            'nickname': room_data.get('nickname', f"直播间 {room_id}"),
+            'enabled': room_data.get('enabled', True),
+            'auto_clip_enabled': room_data.get('auto_clip_enabled', True),
+            'record_folder': room_data.get('record_folder', '')
+        }
+        
+        config['multi_room']['rooms'].append(new_room)
+        
+        return self.save_config(config)
+
+    def remove_room_config(self, room_id: int) -> bool:
+        """删除房间配置"""
+        config = self.get_config()
+        
+        if 'multi_room' not in config or 'rooms' not in config['multi_room']:
+            return False
+        
+        rooms = config['multi_room']['rooms']
+        original_length = len(rooms)
+        
+        config['multi_room']['rooms'] = [
+            room for room in rooms
+            if not (isinstance(room, dict) and int(room.get('room_id', 0)) == room_id)
+        ]
+        
+        if len(config['multi_room']['rooms']) == original_length:
+            logging.warning(f"⚠️ 未找到房间 {room_id}")
+            return False
+        
+        return self.save_config(config)
+
     def add_watcher(self, watcher: callable):
         """添加配置变更观察者"""
         if watcher not in self._watchers:
@@ -227,12 +325,16 @@ def get_multi_room_config() -> List[Dict]:
                     room_id = int(room_id)
                     nickname = room.get("nickname", f"直播间 {room_id}")
                     enabled = room.get("enabled", True)
+                    auto_clip_enabled = room.get("auto_clip_enabled", True)
+                    record_folder = room.get("record_folder", "")
                     processed_rooms.append({
                         "room_id": room_id,
                         "nickname": nickname,
-                        "enabled": enabled
+                        "enabled": enabled,
+                        "auto_clip_enabled": auto_clip_enabled,
+                        "record_folder": record_folder
                     })
-                    logging.info(f"📊 房间配置 [{idx}]: room_id={room_id}, nickname={nickname}, enabled={enabled}")
+                    logging.info(f"📊 房间配置 [{idx}]: room_id={room_id}, nickname={nickname}, enabled={enabled}, auto_clip={auto_clip_enabled}")
                 except (ValueError, TypeError):
                     logging.error(f"❌ 房间ID格式错误: {room_id}")
                     continue
@@ -250,7 +352,9 @@ def get_multi_room_config() -> List[Dict]:
         processed_rooms.append({
             "room_id": default_room_id,
             "nickname": "默认直播间",
-            "enabled": True
+            "enabled": True,
+            "auto_clip_enabled": True,
+            "record_folder": ""
         })
     
     return processed_rooms

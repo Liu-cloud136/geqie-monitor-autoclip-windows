@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Modal, List, Button, Checkbox, Space, Typography, Tag, Spin, message, Divider } from 'antd'
+import { Modal, List, Button, Checkbox, Space, Typography, Tag, Spin, App, Divider } from 'antd'
 import { CheckCircleOutlined, ClockCircleOutlined, PlayCircleOutlined, ReloadOutlined } from '@ant-design/icons'
 import { projectApi } from '../services/api'
 
@@ -37,6 +37,7 @@ const RetryStepDialog: React.FC<RetryStepDialogProps> = ({
   onClose,
   onRetry
 }) => {
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
   const [stepsStatus, setStepsStatus] = useState<StepsStatusResponse | null>(null)
   const [selectedStep, setSelectedStep] = useState<string | null>(null)
