@@ -38,7 +38,7 @@ export const UnifiedStatusBar: React.FC<UnifiedStatusBarProps> = ({
 
   // 导入进度轮询
   useEffect(() => {
-    if (status === 'importing') {
+    if (status === 'importing' && projectId) {
       const pollImportProgress = async () => {
         try {
           console.log(`轮询导入进度: ${projectId}`)
@@ -59,7 +59,13 @@ export const UnifiedStatusBar: React.FC<UnifiedStatusBarProps> = ({
               }, 1000)
             }
           } else {
-            console.error('获取项目数据失败:', response.status, response.statusText)
+            // 404 错误表示项目不存在，可以停止轮询
+            if (response.status === 404) {
+              console.error('项目不存在，停止轮询:', response.status, response.statusText)
+              // 不停止轮询，因为项目可能稍后会被创建
+            } else {
+              console.error('获取项目数据失败:', response.status, response.statusText)
+            }
           }
         } catch (error) {
           console.error('获取导入进度失败:', error)
@@ -78,7 +84,7 @@ export const UnifiedStatusBar: React.FC<UnifiedStatusBarProps> = ({
 
   // 下载进度轮询
   useEffect(() => {
-    if (status === 'downloading') {
+    if (status === 'downloading' && projectId) {
       const pollDownloadProgress = async () => {
         try {
           console.log(`轮询下载进度: ${projectId}`)
@@ -99,7 +105,13 @@ export const UnifiedStatusBar: React.FC<UnifiedStatusBarProps> = ({
               }, 1000)
             }
           } else {
-            console.error('获取项目数据失败:', response.status, response.statusText)
+            // 404 错误表示项目不存在，可以停止轮询
+            if (response.status === 404) {
+              console.error('项目不存在，停止轮询:', response.status, response.statusText)
+              // 不停止轮询，因为项目可能稍后会被创建
+            } else {
+              console.error('获取项目数据失败:', response.status, response.statusText)
+            }
           }
         } catch (error) {
           console.error('获取下载进度失败:', error)
