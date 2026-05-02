@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Button, message, Progress, Space, Typography, Input, Select } from 'antd'
+import { Button, App, Progress, Space, Typography, Input, Select } from 'antd'
 import { InboxOutlined, VideoCameraOutlined, MessageOutlined } from '@ant-design/icons'
 import { useDropzone } from 'react-dropzone'
 import { projectApi } from '../services/api'
@@ -20,6 +20,7 @@ const DANMAKU_SOURCE_TYPES = [
 ]
 
 const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
+  const { message } = App.useApp()
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [projectName, setProjectName] = useState('')

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Space, Typography, Alert, Spin, Progress, Tag, List, Modal, message } from 'antd';
+import { Card, Button, Space, Typography, Alert, Spin, Progress, Tag, List, Modal, App } from 'antd';
 import { 
   PlayCircleOutlined, 
   PauseCircleOutlined, 
@@ -46,6 +46,7 @@ const PipelineControl: React.FC<PipelineControlProps> = ({
   projectId, 
   onStatusChange 
 }) => {
+  const { message } = App.useApp();
   const [pipelineStatus, setPipelineStatus] = useState<PipelineStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);

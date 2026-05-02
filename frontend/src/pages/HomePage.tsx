@@ -5,7 +5,7 @@ import {
   Select,
   Spin,
   Empty,
-  message
+  App
 } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import ProjectVirtualGrid from '../components/ProjectVirtualGrid'
@@ -13,6 +13,7 @@ import FileUpload from '../components/FileUpload'
 import ProjectCard from '../components/ProjectCard'
 
 import { projectApi } from '../services/api'
+import { AxiosError } from 'axios'
 import { Project, useProjectStore } from '../store/useProjectStore'
 import { useProjectPolling } from '../hooks/useProjectPolling'
 import { useWebSocket, ProgressUpdateMessage, SystemNotificationMessage } from '../hooks/useWebSocket'
@@ -26,6 +27,7 @@ const VIRTUAL_SCROLL_THRESHOLD = 20
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate()
+  const { message } = App.useApp()
   const { projects, setProjects, deleteProject, loading, setLoading, error } = useProjectStore()
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
@@ -50,24 +52,24 @@ const HomePage: React.FC = () => {
   const wsHook = useWebSocket({
     userId,
     projectIds: processingProjectIds,
-    onProgress: (message: ProgressUpdateMessage) => {
-      console.log('收到进度更新:', message)
+    onProgress: (progressMsg: ProgressUpdateMessage) => {
+      console.log('收到进度更新:', progressMsg)
       
       // 更新进度数据
       updateProgress(
-        message.project_id,
-        message.stage,
-        message.percent,
-        message.message,
-        message.estimated_remaining
+        progressMsg.project_id,
+        progressMsg.stage,
+        progressMsg.percent,
+        progressMsg.message,
+        progressMsg.estimated_remaining
       )
       
       // 如果任务完成，延迟更新项目状态（避免过早取消订阅）
-      if (message.stage === 'DONE' && message.percent === 100) {
+      if (progressMsg.stage === 'DONE' && progressMsg.percent === 100) {
         setTimeout(() => {
           setProjects(prevProjects => 
             prevProjects.map(p => 
-              p.id === message.project_id 
+              p.id === progressMsg.project_id 
                 ? { ...p, status: 'completed' as const }
                 : p
             )
@@ -148,8 +150,15 @@ const HomePage: React.FC = () => {
       deleteProject(id)
       message.success('项目删除成功')
     } catch (error) {
-      message.error('删除项目失败')
-      console.error('Delete project error:', error)
+      const axiosError = error as AxiosError
+      if (axiosError.response?.status === 404) {
+        console.warn('项目已不存在，从本地状态中移除:', id)
+        deleteProject(id)
+        message.info('项目已不存在')
+      } else {
+        message.error('删除项目失败')
+        console.error('Delete project error:', error)
+      }
     }
   }
 

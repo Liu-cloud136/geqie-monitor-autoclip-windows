@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Card, Tag, Button, Space, Typography, Progress, Popconfirm, message, Tooltip } from 'antd'
+import { Card, Tag, Button, Space, Typography, Progress, Popconfirm, App, Tooltip } from 'antd'
 import { PlayCircleOutlined, DeleteOutlined, EyeOutlined, ReloadOutlined, LoadingOutlined, CheckCircleOutlined, ExclamationCircleOutlined, SettingOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { Project } from '../store/useProjectStore'
@@ -60,6 +60,7 @@ interface LogEntry {
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, onClick }) => {
+  const { message } = App.useApp()
   const navigate = useNavigate()
   const [videoThumbnail, setVideoThumbnail] = useState<string | null>(null)
   const [thumbnailLoading, setThumbnailLoading] = useState(false)
