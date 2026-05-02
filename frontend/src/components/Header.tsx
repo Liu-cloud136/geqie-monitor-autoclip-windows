@@ -109,16 +109,7 @@ const Header: React.FC = () => {
           >
             AutoClip
           </span>
-          <span
-            style={{
-              marginLeft: '8px',
-              fontSize: '12px',
-              color: '#8c8c8c',
-              fontWeight: 500
-            }}
-          >
-            全能系统
-          </span>
+
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>

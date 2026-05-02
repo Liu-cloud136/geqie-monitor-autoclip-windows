@@ -73,6 +73,8 @@ export interface RoomInfo {
   room_id: number
   nickname: string
   enabled: boolean
+  auto_clip_enabled: boolean
+  record_folder: string
   live_status: number
   is_live: boolean
   is_monitoring: boolean
@@ -418,6 +420,41 @@ export const monitorApiService = {
     return monitorApi.get('danmaku/analysis/word_frequency', {
       params: { time_window: timeWindow, top_n: topN }
     })
+  },
+
+  updateRoomConfig: async (roomId: number, updates: {
+    nickname?: string
+    enabled?: boolean
+    auto_clip_enabled?: boolean
+    record_folder?: string
+  }): Promise<{
+    success: boolean
+    message?: string
+    config?: unknown
+  }> => {
+    return monitorApi.put(`multi-room/room/${roomId}`, updates)
+  },
+
+  addRoom: async (roomData: {
+    room_id: number
+    nickname?: string
+    enabled?: boolean
+    auto_clip_enabled?: boolean
+    record_folder?: string
+  }): Promise<{
+    success: boolean
+    message?: string
+    config?: unknown
+  }> => {
+    return monitorApi.post('multi-room/room', roomData)
+  },
+
+  removeRoom: async (roomId: number): Promise<{
+    success: boolean
+    message?: string
+    config?: unknown
+  }> => {
+    return monitorApi.delete(`multi-room/room/${roomId}`)
   },
 }
 

@@ -1382,6 +1382,84 @@ def get_multi_room_config_api():
     })
 
 
+@app.route('/api/multi-room/room/<int:room_id>', methods=['PUT'])
+@api_error_handler
+def update_room_config_api(room_id):
+    """更新指定房间的配置"""
+    if not request.is_json:
+        return jsonify({'success': False, 'error': '请求必须是 JSON 格式'}), 400
+    
+    data = request.get_json()
+    allowed_fields = ['nickname', 'enabled', 'auto_clip_enabled', 'record_folder']
+    
+    updates = {}
+    for key in allowed_fields:
+        if key in data:
+            updates[key] = data[key]
+    
+    if not updates:
+        return jsonify({'success': False, 'error': '没有需要更新的字段'}), 400
+    
+    success = config_manager.update_room_config(room_id, updates)
+    
+    if success:
+        return jsonify({
+            'success': True,
+            'message': '房间配置已更新',
+            'config': get_multi_room_config()
+        })
+    else:
+        return jsonify({'success': False, 'error': '更新房间配置失败'}), 500
+
+
+@app.route('/api/multi-room/room', methods=['POST'])
+@api_error_handler
+def add_room_config_api():
+    """添加新房间配置"""
+    if not request.is_json:
+        return jsonify({'success': False, 'error': '请求必须是 JSON 格式'}), 400
+    
+    data = request.get_json()
+    
+    if 'room_id' not in data:
+        return jsonify({'success': False, 'error': '缺少房间ID'}), 400
+    
+    room_data = {
+        'room_id': data.get('room_id'),
+        'nickname': data.get('nickname'),
+        'enabled': data.get('enabled', True),
+        'auto_clip_enabled': data.get('auto_clip_enabled', True),
+        'record_folder': data.get('record_folder', '')
+    }
+    
+    success = config_manager.add_room_config(room_data)
+    
+    if success:
+        return jsonify({
+            'success': True,
+            'message': '房间已添加',
+            'config': get_multi_room_config()
+        })
+    else:
+        return jsonify({'success': False, 'error': '添加房间失败，可能房间已存在'}), 500
+
+
+@app.route('/api/multi-room/room/<int:room_id>', methods=['DELETE'])
+@api_error_handler
+def remove_room_config_api(room_id):
+    """删除房间配置"""
+    success = config_manager.remove_room_config(room_id)
+    
+    if success:
+        return jsonify({
+            'success': True,
+            'message': '房间已删除',
+            'config': get_multi_room_config()
+        })
+    else:
+        return jsonify({'success': False, 'error': '删除房间失败，可能房间不存在'}), 500
+
+
 @app.route('/api/multi-room/status')
 @api_error_handler
 def get_multi_room_status():
@@ -1425,6 +1503,8 @@ def get_multi_room_status():
             'room_id': room_id,
             'nickname': room_config.get('nickname', f"直播间 {room_id}"),
             'enabled': room_config.get('enabled', True),
+            'auto_clip_enabled': room_config.get('auto_clip_enabled', True),
+            'record_folder': room_config.get('record_folder', ''),
             'live_status': live_info.get('live_status', 0) if live_info else 0,
             'is_live': live_info.get('is_live', False) if live_info else False,
             'is_monitoring': live_info.get('is_monitoring', False) if live_info else False,
@@ -4287,7 +4367,12 @@ class BilibiliDanmakuMonitor:
             # 确保即使错过直播开始事件,也能捕获到弹幕中的关键词
             logging.info("🎯 立即开始监控弹幕中的关键词（包含匹配）...")
             self.is_monitoring = True
-            self.is_live = True  # 标记为活跃状态,确保弹幕能被处理
+            # 根据实际直播状态设置 is_live
+            self.is_live = (live_status == 1)
+            if self.is_live:
+                logging.info("✅ 检测到正在直播中，is_live 设置为 True")
+            else:
+                logging.info("ℹ️ 检测到当前未开播，is_live 设置为 False")
 
             # 启动自动切片触发器
             if AUTO_CLIP_AVAILABLE and self.auto_clip_trigger:
@@ -4334,7 +4419,9 @@ class BilibiliDanmakuMonitor:
             }
             # 即使获取失败也开始监控
             self.is_monitoring = True
-            self.is_live = True
+            # 获取房间信息失败时，is_live 设为 False（未知状态）
+            self.is_live = False
+            logging.info("ℹ️ 获取房间信息失败，is_live 设置为 False")
             
             # 启动自动切片触发器（即使没有房间信息也启动）
             if AUTO_CLIP_AVAILABLE and self.auto_clip_trigger:
@@ -4372,7 +4459,7 @@ class BilibiliDanmakuMonitor:
             # 这样即使CONNECT事件没有触发,也能正常监控弹幕
             logging.info("🎯 预设监控状态为启用,确保弹幕能被处理...")
             self.is_monitoring = True
-            self.is_live = True
+            # 注意: is_live 不在这里设置,由后续的 API 或 LIVE/PREPARING 事件决定
 
             # 注册事件处理器
             # 弹幕消息
