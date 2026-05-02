@@ -465,10 +465,24 @@ class ExportManager:
             for item in room_data:
                 formatted = {}
                 
+                # 格式化时间戳
+                time_display = item.get('time_display')
+                if time_display is None:
+                    timestamp = item.get('timestamp')
+                    if timestamp is not None:
+                        try:
+                            timestamp_float = float(timestamp)
+                            dt = datetime.fromtimestamp(timestamp_float)
+                            time_display = dt.strftime('%Y-%m-%d %H:%M:%S')
+                        except (ValueError, TypeError):
+                            time_display = '-'
+                    else:
+                        time_display = '-'
+                
                 # 基础指标
                 if metrics.get('basic'):
                     formatted.update({
-                        '时间': item.get('time_display', item.get('timestamp', '-')),
+                        '时间': time_display,
                         '用户': item.get('username', '未知用户'),
                         '内容': item.get('content', '-')
                     })
@@ -477,9 +491,9 @@ class ExportManager:
                 if metrics.get('rating'):
                     formatted['评分'] = item.get('rating', 0)
                 
-                # 房间信息
+                # 房间信息（确保为整数，不带千位分隔符）
                 if metrics.get('room'):
-                    formatted['房间ID'] = room_id
+                    formatted['房间ID'] = int(room_id)
                 
                 # 关键词匹配信息
                 if 'keyword_matched' in item:
