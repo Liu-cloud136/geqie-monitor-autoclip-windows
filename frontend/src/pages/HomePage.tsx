@@ -20,7 +20,6 @@ import { useSimpleProgressStore } from '../stores/useSimpleProgressStore'
 
 const { Content } = Layout
 const { Title, Text } = Typography
-const { Option } = Select
 
 // 虚拟滚动阈值 - 超过此数量使用虚拟滚动
 const VIRTUAL_SCROLL_THRESHOLD = 20
@@ -364,12 +363,13 @@ const HomePage: React.FC = () => {
                     </span>
                   }
                   allowClear
-                >
-                  <Option value="all">全部状态</Option>
-                  <Option value="completed">已完成</Option>
-                  <Option value="processing">处理中</Option>
-                  <Option value="error">处理失败</Option>
-                </Select>
+                  options={[
+                    { value: 'all', label: '全部状态' },
+                    { value: 'completed', label: '已完成' },
+                    { value: 'processing', label: '处理中' },
+                    { value: 'error', label: '处理失败' }
+                  ]}
+                />
               </div>
             </div>
 
