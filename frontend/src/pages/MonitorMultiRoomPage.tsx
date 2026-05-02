@@ -109,6 +109,9 @@ const MonitorMultiRoomPage: React.FC = () => {
   const [addLoading, setAddLoading] = useState(false)
   
   const [settingsTab, setSettingsTab] = useState('rooms')
+  
+  const [selectedRoomIds, setSelectedRoomIds] = useState<Set<number>>(new Set())
+  const [batchLoading, setBatchLoading] = useState(false)
 
   const loadRooms = async () => {
     setLoading(true)
@@ -192,8 +195,12 @@ const MonitorMultiRoomPage: React.FC = () => {
     if (!room) {
       return '房间详情'
     }
-    if (room.room_title && room.room_title.trim()) {
-      return room.room_title
+    
+    const invalidTitles = ['未知标题', '未知直播间', '用户直播间', '']
+    const title = room.room_title?.trim() || ''
+    
+    if (title && !invalidTitles.includes(title) && !title.startsWith('用户') && !title.includes('的直播间')) {
+      return title
     }
     return (room as RoomInfo).nickname || `直播间 ${room.room_id}`
   }
@@ -398,6 +405,62 @@ const MonitorMultiRoomPage: React.FC = () => {
     }
   }
 
+  const toggleRoomSelection = (roomId: number) => {
+    const newSelected = new Set(selectedRoomIds)
+    if (newSelected.has(roomId)) {
+      newSelected.delete(roomId)
+    } else {
+      newSelected.add(roomId)
+    }
+    setSelectedRoomIds(newSelected)
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedRoomIds.size === rooms.length) {
+      setSelectedRoomIds(new Set())
+    } else {
+      setSelectedRoomIds(new Set(rooms.map(r => r.room_id)))
+    }
+  }
+
+  const batchToggleAutoClip = async (enable: boolean) => {
+    if (selectedRoomIds.size === 0) {
+      message.warning('请先选择要操作的房间')
+      return
+    }
+    
+    setBatchLoading(true)
+    let successCount = 0
+    let failCount = 0
+    
+    for (const roomId of selectedRoomIds) {
+      try {
+        const result = await monitorApiService.updateRoomConfig(roomId, {
+          auto_clip_enabled: enable,
+        })
+        if (result.success) {
+          successCount++
+        } else {
+          failCount++
+        }
+      } catch (error) {
+        console.error(`Failed to update room ${roomId}:`, error)
+        failCount++
+      }
+    }
+    
+    if (successCount > 0) {
+      message.success(enable ? `已为 ${successCount} 个房间开启自动切片` : `已为 ${successCount} 个房间关闭自动切片`)
+    }
+    if (failCount > 0) {
+      message.error(`${failCount} 个房间操作失败`)
+    }
+    
+    setSelectedRoomIds(new Set())
+    loadRooms()
+    setBatchLoading(false)
+  }
+
   const renderSettingsTab = () => (
     <Spin spinning={loading}>
       <Tabs
@@ -562,106 +625,172 @@ const MonitorMultiRoomPage: React.FC = () => {
   const renderOverviewTab = () => (
     <Spin spinning={loading}>
       {rooms.length > 0 ? (
-        <Row gutter={[16, 16]}>
-          {rooms.map((room) => (
-            <Col xs={24} sm={12} lg={8} key={room.room_id}>
-              <Card
-                hoverable
-                style={{
-                  borderRadius: 12,
-                  borderLeft: `4px solid ${getLiveStatusColor(room.is_live)}`,
-                }}
-                bodyStyle={{ padding: 16 }}
+        <>
+          <div 
+            style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              marginBottom: 16,
+              flexWrap: 'wrap',
+              gap: 12
+            }}
+          >
+            <Space>
+              <Checkbox
+                checked={selectedRoomIds.size === rooms.length && rooms.length > 0}
+                indeterminate={selectedRoomIds.size > 0 && selectedRoomIds.size < rooms.length}
+                onChange={toggleSelectAll}
               >
-                <div onClick={() => showRoomDetail(room)} style={{ cursor: 'pointer' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-                    <span style={{ fontWeight: 'bold', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {getRoomDisplayName(room)}
-                    </span>
-                    <Tag color={room.is_live ? 'success' : 'default'}>
-                      {room.is_live ? '直播中' : '未开播'}
-                    </Tag>
+                全选
+              </Checkbox>
+              {selectedRoomIds.size > 0 && (
+                <Tag color="blue">
+                  已选择 {selectedRoomIds.size} 个房间
+                </Tag>
+              )}
+            </Space>
+            
+            {selectedRoomIds.size > 0 && (
+              <Space>
+                <Button
+                  type="primary"
+                  icon={<CheckCircleOutlined />}
+                  onClick={() => batchToggleAutoClip(true)}
+                  loading={batchLoading}
+                >
+                  批量开启自动切片
+                </Button>
+                <Button
+                  icon={<CloseCircleOutlined />}
+                  onClick={() => batchToggleAutoClip(false)}
+                  loading={batchLoading}
+                >
+                  批量关闭自动切片
+                </Button>
+                <Button onClick={() => setSelectedRoomIds(new Set())}>
+                  取消选择
+                </Button>
+              </Space>
+            )}
+          </div>
+          
+          <Row gutter={[16, 16]}>
+            {rooms.map((room) => (
+              <Col xs={24} sm={12} lg={8} key={room.room_id}>
+                <Card
+                  hoverable
+                  style={{
+                    borderRadius: 12,
+                    borderLeft: `4px solid ${getLiveStatusColor(room.is_live)}`,
+                    border: selectedRoomIds.has(room.room_id) ? '2px solid #1890ff' : undefined,
+                    boxShadow: selectedRoomIds.has(room.room_id) ? '0 0 0 2px rgba(24, 144, 255, 0.2)' : undefined,
+                  }}
+                  bodyStyle={{ padding: 16 }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                    <Checkbox
+                      checked={selectedRoomIds.has(room.room_id)}
+                      onChange={(e) => {
+                        e.stopPropagation()
+                        toggleRoomSelection(room.room_id)
+                      }}
+                      style={{ marginTop: 4 }}
+                    />
+                    
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div onClick={() => showRoomDetail(room)} style={{ cursor: 'pointer' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                          <span style={{ fontWeight: 'bold', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {getRoomDisplayName(room)}
+                          </span>
+                          <Tag color={room.is_live ? 'success' : 'default'}>
+                            {room.is_live ? '直播中' : '未开播'}
+                          </Tag>
+                        </div>
+                        
+                        <div style={{ color: '#999', fontSize: 12, marginBottom: 8 }}>
+                          {room.nickname && room.nickname !== getRoomDisplayName(room) ? 
+                            <span>{room.nickname} | </span> : null}
+                          房间号: {room.room_id}
+                        </div>
+                        
+                        <Row gutter={[16, 0]} style={{ marginBottom: 12 }}>
+                          <Col span={8}>
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#1890ff' }}>
+                                {room.db_today_count || 0}
+                              </div>
+                              <div style={{ fontSize: 11, color: '#999' }}>今日</div>
+                            </div>
+                          </Col>
+                          <Col span={8}>
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#52c41a' }}>
+                                {room.db_week_count || 0}
+                              </div>
+                              <div style={{ fontSize: 11, color: '#999' }}>本周</div>
+                            </div>
+                          </Col>
+                          <Col span={8}>
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#faad14' }}>
+                                {room.keyword_count || 0}
+                              </div>
+                              <div style={{ fontSize: 11, color: '#999' }}>关键词</div>
+                            </div>
+                          </Col>
+                        </Row>
+                      </div>
+                      
+                      <Divider style={{ margin: '8px 0' }} />
+                      
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Space>
+                          <Tooltip title={room.auto_clip_enabled ? '点击关闭自动切片' : '点击开启自动切片'}>
+                            <div 
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: 6, 
+                                cursor: 'pointer',
+                                color: room.auto_clip_enabled ? '#52c41a' : '#999'
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleToggleAutoClip(room, !room.auto_clip_enabled, e)
+                              }}
+                            >
+                              <ScissorOutlined />
+                              <span style={{ fontSize: 12 }}>
+                                {room.auto_clip_enabled ? '自动切片: 开' : '自动切片: 关'}
+                              </span>
+                            </div>
+                          </Tooltip>
+                          {room.record_folder && (
+                            <Tooltip title={`录制文件夹: ${room.record_folder}`}>
+                              <FolderOutlined style={{ color: '#1890ff' }} />
+                            </Tooltip>
+                          )}
+                        </Space>
+                        <Space size={4}>
+                          <Tooltip title="编辑配置">
+                            <Button
+                              type="text"
+                              size="small"
+                              icon={<EditOutlined />}
+                              onClick={(e) => handleEditRoom(room, e)}
+                            />
+                          </Tooltip>
+                        </Space>
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div style={{ color: '#999', fontSize: 12, marginBottom: 8 }}>
-                    {room.nickname && room.nickname !== getRoomDisplayName(room) ? 
-                      <span>{room.nickname} | </span> : null}
-                    房间号: {room.room_id}
-                  </div>
-                  
-                  <Row gutter={[16, 0]} style={{ marginBottom: 12 }}>
-                    <Col span={8}>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: 18, fontWeight: 'bold', color: '#1890ff' }}>
-                          {room.db_today_count || 0}
-                        </div>
-                        <div style={{ fontSize: 11, color: '#999' }}>今日</div>
-                      </div>
-                    </Col>
-                    <Col span={8}>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: 18, fontWeight: 'bold', color: '#52c41a' }}>
-                          {room.db_week_count || 0}
-                        </div>
-                        <div style={{ fontSize: 11, color: '#999' }}>本周</div>
-                      </div>
-                    </Col>
-                    <Col span={8}>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: 18, fontWeight: 'bold', color: '#faad14' }}>
-                          {room.keyword_count || 0}
-                        </div>
-                        <div style={{ fontSize: 11, color: '#999' }}>关键词</div>
-                      </div>
-                    </Col>
-                  </Row>
-                </div>
-                
-                <Divider style={{ margin: '8px 0' }} />
-                
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Space>
-                    <Tooltip title={room.auto_clip_enabled ? '点击关闭自动切片' : '点击开启自动切片'}>
-                      <div 
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: 6, 
-                          cursor: 'pointer',
-                          color: room.auto_clip_enabled ? '#52c41a' : '#999'
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleToggleAutoClip(room, !room.auto_clip_enabled, e)
-                        }}
-                      >
-                        <ScissorOutlined />
-                        <span style={{ fontSize: 12 }}>
-                          {room.auto_clip_enabled ? '自动切片: 开' : '自动切片: 关'}
-                        </span>
-                      </div>
-                    </Tooltip>
-                    {room.record_folder && (
-                      <Tooltip title={`录制文件夹: ${room.record_folder}`}>
-                        <FolderOutlined style={{ color: '#1890ff' }} />
-                      </Tooltip>
-                    )}
-                  </Space>
-                  <Space size={4}>
-                    <Tooltip title="编辑配置">
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<EditOutlined />}
-                        onClick={(e) => handleEditRoom(room, e)}
-                      />
-                    </Tooltip>
-                  </Space>
-                </div>
-              </Card>
-            </Col>
-          ))}
-        </Row>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </>
       ) : (
         <Empty
           description={
