@@ -47,6 +47,14 @@ from data_manager import data_manager
 # 导入独立的在线聊天室模块
 import live_chatroom
 
+# 导入直播录制和切片 API 模块
+try:
+    from live_api import live_bp
+    LIVE_API_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"直播API模块导入失败: {e}")
+    LIVE_API_AVAILABLE = False
+
 # 导入弹幕分析模块
 from danmaku_analyzer import get_danmaku_analyzer, DanmakuAnalyzer, SentimentType
 
@@ -542,6 +550,11 @@ def get_live_duration():
 
 # Flask应用实例
 app = Flask(__name__)
+
+# 注册直播录制和切片 API 蓝图
+if LIVE_API_AVAILABLE:
+    app.register_blueprint(live_bp)
+    logging.info("✅ 直播API蓝图已注册 (/api/live/*)")
 
 # 静态文件哈希缓存 - 存储格式: {路径: (修改时间, 哈希值)}
 _static_file_hashes = {}
