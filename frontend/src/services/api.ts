@@ -322,23 +322,37 @@ export const projectApi = {
       }
 
       // 转换后端数据格式为前端期望的格式
-      const convertedClips = clips.map((clip: Clip) => {
+      const convertedClips = clips.map((clip: any) => {
         // 获取metadata中的内容
         const metadata = clip.clip_metadata || {}
 
         return {
           id: clip.id,
-          title: clip.title,
-          generated_title: clip.title,
+          project_id: clip.project_id || '',
+          title: clip.title || '未命名片段',
+          description: clip.description || '',
           start_time: formatSecondsToTime(typeof clip.start_time === 'number' ? clip.start_time : parseFloat(clip.start_time as string)),
           end_time: formatSecondsToTime(typeof clip.end_time === 'number' ? clip.end_time : parseFloat(clip.end_time as string)),
           duration: clip.duration || 0,
+          score: clip.score || 0,
+          recommendation_reason: clip.recommendation_reason || '',
+          video_path: clip.video_path || '',
+          thumbnail_path: clip.thumbnail_path || '',
+          processing_step: clip.processing_step,
+          tags: clip.tags || [],
+          clip_metadata: metadata,
+          created_at: clip.created_at || new Date().toISOString(),
+          updated_at: clip.updated_at || new Date().toISOString(),
+          status: clip.status,
+          is_processing: clip.is_processing,
+          is_completed: clip.is_completed,
+          has_error: clip.has_error,
           final_score: clip.score || 0,
           recommend_reason: metadata.recommend_reason || '',
           outline: metadata.outline || '',
-          // 只使用metadata中的content，避免使用description（可能是转写文本）
           content: metadata.content || [],
           chunk_index: metadata.chunk_index || 0,
+          generated_title: clip.title || '',
         }
       })
 
