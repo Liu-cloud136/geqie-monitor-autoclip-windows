@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Layout, Card, Button, Typography, Space, Alert, Row, Col, Tabs, message, Popconfirm, Spin } from 'antd'
+import { Layout, Card, Button, Typography, Space, Alert, Row, Col, Tabs, App, Popconfirm, Spin } from 'antd'
 import {
   SettingOutlined,
   SaveOutlined,
@@ -17,6 +17,7 @@ const { Content } = Layout
 const { Title, Text } = Typography
 
 const StepConfigPage: React.FC = () => {
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [stepConfigs, setStepConfigs] = useState<Record<string, StepConfig>>({})

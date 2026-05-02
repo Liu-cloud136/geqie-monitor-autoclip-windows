@@ -1,177 +1,70 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+/**
+ * 项目详情页面
+ * 显示项目详情、视频切片列表和时间轴编辑器
+ * 
+ * 重构说明：
+ * - 核心逻辑已拆分到以下模块：
+ *   - hooks/useProjectDetail.ts - 项目详情页面的自定义Hook
+ *   - components/ClipsTabContent.tsx - 切片列表标签页组件
+ *   - components/EditorTabContent.tsx - 时间轴编辑标签页组件
+ * - 本文件保持向后兼容，作为统一入口点
+ */
+
+import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Layout,
-  Card,
-  Typography,
+  Spin,
+  Alert,
   Button,
   Space,
-  Alert,
-  Spin,
-  Empty,
-  message,
-  Radio,
+  Typography,
   Tabs,
-  Tag,
+  Tag
 } from 'antd'
 import {
   ArrowLeftOutlined,
-  PlayCircleOutlined,
-  VideoCameraOutlined,
   UnorderedListOutlined,
+  VideoCameraOutlined
 } from '@ant-design/icons'
-import { useProjectStore, Clip } from '../store/useProjectStore'
-import { projectApi, clipEditApi } from '../services/api'
-import { useClipEditStore } from '../stores/useClipEditStore'
-import ClipVirtualGrid from '../components/ClipVirtualGrid'
-import ClipCard from '../components/ClipCard'
-import TimelineEditor from '../components/TimelineEditor'
+
+// 导入拆分后的模块
+import { useProjectDetail } from '../hooks/useProjectDetail'
+import ClipsTabContent from '../components/ClipsTabContent'
+import EditorTabContent from '../components/EditorTabContent'
 import SelectClipsModal from '../components/SelectClipsModal'
-import { EditSegment } from '../types/api'
 
 const { Content } = Layout
 const { Title, Text } = Typography
 
-const VIRTUAL_SCROLL_THRESHOLD = 30
-
+/**
+ * 项目详情页面组件
+ * @returns React组件
+ */
 const ProjectDetailPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  
+  // 使用拆分后的自定义Hook
   const {
     currentProject,
     loading,
     error,
-    setCurrentProject
-  } = useProjectStore()
-
-  // 编辑状态
-  const {
+    statusLoading,
+    sortBy,
+    activeTab,
+    selectClipsModalVisible,
+    selectedClipIdsForAdd,
     currentSession,
-    setSession,
-    setSegments,
-    addSegment,
-  } = useClipEditStore()
-
-  const [statusLoading, setStatusLoading] = useState(false)
-  const [sortBy, setSortBy] = useState<'time' | 'score'>('score')
-  const [activeTab, setActiveTab] = useState<'clips' | 'editor'>('clips')
-  const [selectClipsModalVisible, setSelectClipsModalVisible] = useState(false)
-  const [selectedClipIdsForAdd, setSelectedClipIdsForAdd] = useState<string[]>([])
-
-  useEffect(() => {
-    if (id) {
-      if (!currentProject || currentProject.id !== id) {
-        loadProject()
-      }
-      loadProcessingStatus()
-    }
-  }, [id])
-
-  const loadProject = async () => {
-    if (!id) return
-    try {
-      console.log('🔄 开始加载项目:', id)
-      const project = await projectApi.getProject(id)
-      console.log('📦 完整项目数据:', project)
-      console.log('🎬 Loaded project with clips:', project.clips?.length || 0, 'clips')
-      setCurrentProject(project)
-
-      const { projects } = useProjectStore.getState()
-      const updatedProjects = projects.map(p =>
-        p.id === id ? project : p
-      )
-      useProjectStore.setState({ projects: updatedProjects })
-    } catch (error) {
-      console.error('Failed to load project:', error)
-      message.error('加载项目失败')
-    }
-  }
-
-  const loadProcessingStatus = async () => {
-    if (!id) return
-    setStatusLoading(true)
-    try {
-      await projectApi.getProcessingStatus(id)
-    } catch (error) {
-      console.error('Failed to load processing status:', error)
-    } finally {
-      setStatusLoading(false)
-    }
-  }
-
-  const handleStartProcessing = async () => {
-    if (!id) return
-    try {
-      await projectApi.startProcessing(id)
-      message.success('开始处理')
-      loadProcessingStatus()
-    } catch (error) {
-      console.error('Failed to start processing:', error)
-      message.error('启动处理失败')
-    }
-  }
-
-  const getSortedClips = useCallback(() => {
-    if (!currentProject?.clips) return []
-    const clips = [...currentProject.clips]
-    
-    if (sortBy === 'score') {
-      return clips.sort((a, b) => b.final_score - a.final_score)
-    } else {
-      return clips.sort((a, b) => {
-        const getTimeInSeconds = (timeStr: string | number) => {
-          if (typeof timeStr === 'number') {
-            return timeStr
-          }
-          const parts = timeStr.split(':')
-          const hours = parseInt(parts[0])
-          const minutes = parseInt(parts[1])
-          const seconds = parseFloat(parts[2].replace(',', '.'))
-          return hours * 3600 + minutes * 60 + seconds
-        }
-        
-        const aTime = getTimeInSeconds(a.start_time)
-        const bTime = getTimeInSeconds(b.start_time)
-        return aTime - bTime
-      })
-    }
-  }, [currentProject, sortBy])
-
-  // 打开选择切片模态框
-  const handleOpenSelectClips = useCallback(() => {
-    const existingIds = currentSession?.segments?.map(s => String(s.original_clip_id)) || []
-    setSelectedClipIdsForAdd(existingIds)
-    setSelectClipsModalVisible(true)
-  }, [currentSession])
-
-  // 确认添加选择的切片到时间轴
-  const handleConfirmAddClips = useCallback(async (clipIds: string[]) => {
-    if (!currentSession || !id) return
-
-    const existingIds = new Set(currentSession.segments.map(s => String(s.original_clip_id)))
-    const newIds = clipIds.filter(clipId => !existingIds.has(clipId))
-
-    if (newIds.length === 0) {
-      message.info('这些切片已在时间轴中')
-      return
-    }
-
-    try {
-      const result = await clipEditApi.addClipsToSession(currentSession.id, newIds)
-      if (result.success) {
-        message.success(`已添加 ${result.added_count} 个切片到时间轴`)
-        // 重新加载会话数据
-        const sessionResult = await clipEditApi.getSession(currentSession.id)
-        if (sessionResult.success) {
-          setSession(sessionResult.session as any)
-        }
-        // 切换到编辑标签
-        setActiveTab('editor')
-      }
-    } catch (error) {
-      message.error('添加切片失败')
-    }
-  }, [currentSession, id, setSession])
+    loadProject,
+    handleStartProcessing,
+    getSortedClips,
+    handleOpenSelectClips,
+    handleConfirmAddClips,
+    setSortBy,
+    setActiveTab,
+    setSelectClipsModalVisible,
+    setSelectedClipIdsForAdd
+  } = useProjectDetail()
 
   if (loading) {
     return (
@@ -198,226 +91,6 @@ const ProjectDetailPage: React.FC = () => {
     )
   }
 
-  // 渲染切片列表标签页内容
-  const renderClipsTab = () => {
-    if (currentProject.status !== 'completed') {
-      return (
-        <div>
-          {currentProject.clips && currentProject.clips.length > 0 ? (
-            <Card style={{ marginTop: '16px', borderRadius: '16px', border: '1px solid #e0e0e0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                <div>
-                  <Title level={4} style={{ margin: 0, fontWeight: 600 }}>已生成的片段（预览）</Title>
-                  <Text type="secondary" style={{ fontSize: '14px' }}>
-                    正在处理中... 已生成 {currentProject.clips?.length || 0} 个片段
-                  </Text>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <Text style={{ fontSize: '13px', color: '#666666', fontWeight: 500 }}>排序</Text>
-                  <Radio.Group
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    size="small"
-                    buttonStyle="solid"
-                  >
-                    <Radio.Button value="time" style={{ height: '28px', lineHeight: '26px' }}>时间</Radio.Button>
-                    <Radio.Button value="score" style={{ height: '28px', lineHeight: '26px' }}>评分</Radio.Button>
-                  </Radio.Group>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                  gap: '20px',
-                  padding: '8px 0'
-                }}
-              >
-                {getSortedClips().map((clip) => (
-                  <ClipCard
-                    key={clip.id}
-                    clip={clip}
-                    projectId={currentProject.id}
-                  />
-                ))}
-              </div>
-
-              <div style={{ marginTop: '16px', textAlign: 'center', padding: '12px', background: '#fffbe6', borderRadius: '8px' }}>
-                <Text style={{ color: '#faad14', fontSize: '14px' }}>
-                  ℹ️ 更多片段正在处理中，完成后将自动更新...
-                </Text>
-              </div>
-            </Card>
-          ) : (
-            <Card style={{ marginTop: '16px', borderRadius: '16px' }}>
-              <Empty
-                image={<PlayCircleOutlined style={{ fontSize: '64px', color: '#d9d9d9' }} />}
-                description={
-                  <div>
-                    <Text>项目还未完成处理</Text>
-                    <br />
-                    <Text type="secondary">处理完成后可查看视频片段</Text>
-                  </div>
-                }
-              />
-            </Card>
-          )}
-        </div>
-      )
-    }
-
-    // 已完成状态的切片列表
-    return (
-      <Card
-        className="clip-list-card"
-        style={{
-          borderRadius: '16px',
-          border: '1px solid #e0e0e0',
-        }}
-        styles={{
-          body: {
-            padding: '24px'
-          }
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-          <div>
-            <Title level={4} style={{ margin: 0, color: '#1a1a1a', fontWeight: 600 }}>视频片段</Title>
-            <Text type="secondary" style={{ color: '#666666', fontSize: '14px' }}>
-              AI 已为您生成了 {currentProject.clips?.length || 0} 个精彩片段
-            </Text>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <Button
-              type="primary"
-              icon={<VideoCameraOutlined />}
-              onClick={handleOpenSelectClips}
-              style={{
-                background: 'linear-gradient(45deg, #52c41a, #73d13d)',
-                border: 'none',
-              }}
-            >
-              添加到时间轴
-            </Button>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Text style={{ fontSize: '13px', color: '#666666', fontWeight: 500 }}>排序</Text>
-              <Radio.Group
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                size="small"
-                buttonStyle="solid"
-              >
-                <Radio.Button
-                   value="time"
-                   style={{
-                     fontSize: '13px',
-                     height: '32px',
-                     lineHeight: '30px',
-                     padding: '0 16px',
-                     background: sortBy === 'time' ? 'linear-gradient(45deg, #1890ff, #36cfc9)' : '#ffffff',
-                     border: sortBy === 'time' ? '1px solid #1890ff' : '1px solid #d0d0d0',
-                     color: sortBy === 'time' ? '#ffffff' : '#666666',
-                     borderRadius: '6px 0 0 6px',
-                     fontWeight: sortBy === 'time' ? 600 : 400,
-                     boxShadow: sortBy === 'time' ? '0 2px 8px rgba(24, 144, 255, 0.3)' : 'none',
-                     transition: 'all 0.2s ease'
-                   }}
-                 >
-                   时间
-                 </Radio.Button>
-                 <Radio.Button
-                   value="score"
-                   style={{
-                     fontSize: '13px',
-                     height: '32px',
-                     lineHeight: '30px',
-                     padding: '0 16px',
-                     background: sortBy === 'score' ? 'linear-gradient(45deg, #1890ff, #36cfc9)' : '#ffffff',
-                     border: sortBy === 'score' ? '1px solid #1890ff' : '1px solid #d0d0d0',
-                     borderLeft: 'none',
-                     color: sortBy === 'score' ? '#ffffff' : '#666666',
-                     borderRadius: '0 6px 6px 0',
-                     fontWeight: sortBy === 'score' ? 600 : 400,
-                     boxShadow: sortBy === 'score' ? '0 2px 8px rgba(24, 144, 255, 0.3)' : 'none',
-                     transition: 'all 0.2s ease'
-                   }}
-                 >
-                   评分
-                 </Radio.Button>
-              </Radio.Group>
-            </div>
-          </div>
-        </div>
-
-        {currentProject.clips && currentProject.clips.length > 0 ? (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-              gap: '20px',
-              padding: '8px 0'
-            }}
-          >
-            {getSortedClips().map((clip) => (
-              <ClipCard
-                key={clip.id}
-                clip={clip}
-                projectId={currentProject.id}
-              />
-            ))}
-          </div>
-        ) : (
-          <div style={{
-            padding: '60px 0',
-            textAlign: 'center',
-            background: 'rgba(255,255,255,0.02)',
-            borderRadius: '12px',
-            border: '1px dashed #404040'
-          }}>
-            <Empty
-              description={
-                <Text style={{ color: '#888', fontSize: '14px' }}>暂无视频片段</Text>
-              }
-              image={<PlayCircleOutlined style={{ fontSize: '48px', color: '#555' }} />}
-            />
-          </div>
-        )}
-      </Card>
-    )
-  }
-
-  // 渲染时间轴编辑标签页内容
-  const renderEditorTab = () => {
-    if (currentProject.status !== 'completed') {
-      return (
-        <Card style={{ marginTop: '16px', borderRadius: '16px' }}>
-          <Empty
-            description={
-              <div>
-                <Text>项目还未完成处理</Text>
-                <br />
-                <Text type="secondary">处理完成后可使用时间轴编辑功能</Text>
-              </div>
-            }
-            image={<VideoCameraOutlined style={{ fontSize: '64px', color: '#d9d9d9' }} />}
-          />
-        </Card>
-      )
-    }
-
-    return (
-      <div style={{ marginTop: '16px' }}>
-        <TimelineEditor
-          projectId={currentProject.id}
-          onAddClips={handleOpenSelectClips}
-        />
-      </div>
-    )
-  }
-
   // 定义标签页
   const tabItems = [
     {
@@ -433,7 +106,15 @@ const ProjectDetailPage: React.FC = () => {
           )}
         </span>
       ),
-      children: renderClipsTab(),
+      children: (
+        <ClipsTabContent
+          currentProject={currentProject}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          getSortedClips={getSortedClips}
+          handleOpenSelectClips={handleOpenSelectClips}
+        />
+      ),
     },
   ]
 
@@ -452,7 +133,12 @@ const ProjectDetailPage: React.FC = () => {
           )}
         </span>
       ),
-      children: renderEditorTab(),
+      children: (
+        <EditorTabContent
+          currentProject={currentProject}
+          handleOpenSelectClips={handleOpenSelectClips}
+        />
+      ),
     })
   }
 
