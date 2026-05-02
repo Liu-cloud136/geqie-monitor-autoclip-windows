@@ -55,7 +55,6 @@ import { monitorApiService, RoomInfo, DanmakuRecord, TopUser, DailyStat } from '
 
 const { Text } = Typography
 const { Option } = Select
-const { Checkbox: CheckboxComponent } = Checkbox
 const { TextArea } = Input
 
 interface ComparisonData {
@@ -189,14 +188,17 @@ const MonitorMultiRoomPage: React.FC = () => {
     }
   }
 
-  const getRoomDisplayName = (room: RoomInfo | ComparisonData) => {
+  const getRoomDisplayName = (room: RoomInfo | ComparisonData | null) => {
+    if (!room) {
+      return '房间详情'
+    }
     if (room.room_title && room.room_title.trim()) {
       return room.room_title
     }
     return (room as RoomInfo).nickname || `直播间 ${room.room_id}`
   }
 
-  const getSortedComparisonData = () => {
+  const getSortedComparisonData = (): ComparisonData[] => {
     if (comparisonData.length === 0) {
       return (rooms || []).map(room => ({
         room_id: room.room_id,
@@ -209,7 +211,8 @@ const MonitorMultiRoomPage: React.FC = () => {
         is_live: room.is_live,
       }))
     }
-    return sortBy(comparisonData, [
+    
+    const sorted = sortBy(comparisonData, [
       (item: ComparisonData) => {
         switch (sortField) {
           case 'today': return item.today_count
@@ -220,6 +223,8 @@ const MonitorMultiRoomPage: React.FC = () => {
         }
       }
     ], [sortOrder === 'desc' ? 'desc' : 'asc'])
+    
+    return sorted as ComparisonData[]
   }
 
   const toggleSort = (field: 'today' | 'week' | 'total' | 'keyword') => {
@@ -1118,7 +1123,7 @@ const MonitorMultiRoomPage: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
             <span>
               <VideoCameraOutlined style={{ marginRight: 8 }} />
-              {getRoomDisplayName(selectedRoom as RoomInfo)} - 房间详情
+              {getRoomDisplayName(selectedRoom)} - 房间详情
             </span>
             <Space>
               {selectedRoom?.auto_clip_enabled && (
