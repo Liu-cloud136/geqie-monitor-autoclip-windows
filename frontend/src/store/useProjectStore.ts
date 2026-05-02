@@ -1,33 +1,46 @@
 import { create } from 'zustand'
 
 export interface Clip {
-  id: string
-  title?: string  // 可能没有原始title
+  id: string | number
+  project_id: string | number
+  title: string
+  description?: string
   start_time: string | number
   end_time: string | number
-  final_score: number  // 匹配后端字段名
-  recommend_reason: string  // 匹配后端字段名
-  generated_title?: string
-  outline: string
-  content: string[]
-  chunk_index?: number  // 添加缺失字段
-  // 额外字段，用于API响应
+  duration: number
+  score?: number
+  recommendation_reason?: string
+  video_path?: string
+  thumbnail_path?: string
+  processing_step?: number
+  tags?: string[]
   clip_metadata?: {
     final_score?: number
     recommend_reason?: string
     outline?: string
-    content?: string[]
+    content?: Array<{
+      time_range: string
+      content: string
+    }>
     chunk_index?: number
     generated_title?: string
+    metadata_file?: string
   }
-  score?: number
-  duration?: number
-  recommendation_reason?: string
-  description?: string
+  created_at: string
+  updated_at: string
   status?: string
-  project_id?: string | number
-  created_at?: string
-  updated_at?: string
+  is_processing?: boolean
+  is_completed?: boolean
+  has_error?: boolean
+  final_score?: number
+  recommend_reason?: string
+  outline?: string
+  content?: Array<{
+    time_range: string
+    content: string
+  }>
+  chunk_index?: number
+  generated_title?: string
 }
 
 // 项目状态类型定义，与后端保持一致

@@ -345,8 +345,12 @@ async def get_project(
             clips_data = [clip.to_dict() if hasattr(clip, 'to_dict') else clip.__dict__ for clip in clips]
             db.close()
         
-        # 创建包含clips的响应数据
-        response_data = project.model_dump() if hasattr(project, 'model_dump') else project.__dict__
+        # get_project_with_stats 返回的是字典，直接使用
+        if isinstance(project, dict):
+            response_data = project.copy()
+        else:
+            response_data = project.model_dump() if hasattr(project, 'model_dump') else project.__dict__
+        
         if clips_data is not None:
             response_data['clips'] = clips_data
         
@@ -355,6 +359,7 @@ async def get_project(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"获取项目 {project_id} 失败: {str(e)}", exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -898,10 +903,9 @@ async def get_processing_status(
     processing_service: object = Depends(get_processing_service)
 ):
     """Get processing status of a project."""
-    import sys
-    print(f"DEBUG ENTRY get_processing_status: project_id = {project_id}", file=sys.stderr, flush=True)
+    logger.debug(f"get_processing_status: project_id = {project_id}")
     try:
-        print(f"DEBUG: processing_service = {processing_service}, type = {type(processing_service)}", file=sys.stderr, flush=True)
+        logger.debug(f"processing_service = {processing_service}, type = {type(processing_service)}")
 
         project = project_service.get(project_id)
         if not project:
@@ -961,15 +965,14 @@ async def get_processing_status(
                 "error_message": latest_task.error_message if hasattr(latest_task, 'error_message') else None
             }
         
-        print(f"DEBUG: 调用 get_processing_status, 参数: project_id={project_id}", file=sys.stderr)
+        logger.debug(f"调用 get_processing_status, 参数: project_id={project_id}")
         status = processing_service.get_processing_status(project_id)
-        print(f"DEBUG: get_processing_status 返回成功", file=sys.stderr)
+        logger.debug("get_processing_status 返回成功")
 
         return status
     except Exception as e:
         import traceback
         error_msg = f"ERROR in get_processing_status: {e}\n{traceback.format_exc()}"
-        print(error_msg, file=sys.stderr)
         logger.error(error_msg)
         raise HTTPException(status_code=400, detail=str(e))
 

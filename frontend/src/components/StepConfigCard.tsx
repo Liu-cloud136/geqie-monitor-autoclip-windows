@@ -20,7 +20,6 @@ import { settingsApi } from '../services/api'
 
 const { Text, Title } = Typography
 const { Panel } = Collapse
-const { Option } = Select
 
 interface StepConfigCardProps {
   stepType: string
@@ -363,13 +362,11 @@ const StepConfigCard: React.FC<StepConfigCardProps> = ({
                     placeholder="选择AI提供商"
                     onChange={handleProviderChange}
                     loading={refreshingModels}
-                  >
-                    {providers.map(provider => (
-                      <Option key={provider.value} value={provider.value}>
-                        {provider.display_name}
-                      </Option>
-                    ))}
-                  </Select>
+                    options={providers.map(provider => ({
+                      value: provider.value,
+                      label: provider.display_name
+                    }))}
+                  />
                 </Form.Item>
               </Col>
               
@@ -405,13 +402,11 @@ const StepConfigCard: React.FC<StepConfigCardProps> = ({
                       const displayText = model?.display_name || model?.id || ''
                       return displayText.toLowerCase().includes(input.toLowerCase())
                     }}
-                  >
-                    {models.map(model => (
-                      <Option key={model.id} value={model.id}>
-                        {model.display_name || model.id}
-                      </Option>
-                    ))}
-                  </Select>
+                    options={models.map(model => ({
+                      value: model.id,
+                      label: model.display_name || model.id
+                    }))}
+                  />
                 </Form.Item>
               </Col>
             </Row>

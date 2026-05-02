@@ -14,14 +14,19 @@ echo.
 echo Note: Four new windows will be opened
 echo.
 
-set PROJECT_DIR=%~dp0
-set VENV_DIR=%PROJECT_DIR%venv
+set SCRIPT_DIR=%~dp0
+set VENV_DIR=%SCRIPT_DIR%venv
 
-cd /d "%PROJECT_DIR%"
+echo Script directory: %SCRIPT_DIR%
+echo.
+
+cd /d "%SCRIPT_DIR%"
 
 echo [Check] Virtual environment...
-if not exist "%VENV_DIR%\Scripts\activate.bat" (
+if not exist "%VENV_DIR%\Scripts\python.exe" (
     echo [ERROR] Virtual environment not found
+    echo Expected: %VENV_DIR%\Scripts\python.exe
+    echo.
     echo Please run install.bat first to install dependencies
     pause
     exit /b 1
@@ -63,7 +68,7 @@ echo.
 
 echo [1/4] Starting FastAPI Backend Server...
 echo Window: AutoClip - FastAPI Server
-start "AutoClip - FastAPI Server" cmd /k "cd /d "%PROJECT_DIR%" ^&^& start_backend.bat"
+start "AutoClip - FastAPI Server" "%SCRIPT_DIR%start_backend.bat"
 
 echo Waiting 5 seconds for service to start...
 timeout /t 5 /nobreak >nul
@@ -71,7 +76,7 @@ echo.
 
 echo [2/4] Starting Celery Task Queue...
 echo Window: AutoClip - Celery Worker
-start "AutoClip - Celery Worker" cmd /k "cd /d "%PROJECT_DIR%" ^&^& start_celery.bat"
+start "AutoClip - Celery Worker" "%SCRIPT_DIR%start_celery.bat"
 
 echo Waiting 3 seconds for service to start...
 timeout /t 3 /nobreak >nul
@@ -79,15 +84,15 @@ echo.
 
 echo [3/4] Starting Frontend Dev Server...
 echo Window: AutoClip - Frontend
-start "AutoClip - Frontend" cmd /k "cd /d "%PROJECT_DIR%frontend" ^&^& npm run dev"
+start "AutoClip - Frontend" "%SCRIPT_DIR%start_frontend.bat"
 
-echo Waiting 3 seconds for service to start...
-timeout /t 3 /nobreak >nul
+echo Waiting 5 seconds for service to start...
+timeout /t 5 /nobreak >nul
 echo.
 
 echo [4/4] Starting Danmaku Monitor Service...
 echo Window: Danmaku Monitor System
-start "Danmaku Monitor System" cmd /k "cd /d "%PROJECT_DIR%" ^&^& start_monitor.bat"
+start "Danmaku Monitor System" "%SCRIPT_DIR%start_monitor.bat"
 
 echo.
 echo ========================================
