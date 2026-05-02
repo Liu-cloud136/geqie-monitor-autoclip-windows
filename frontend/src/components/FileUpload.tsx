@@ -1,12 +1,11 @@
 import React, { useState } from 'react'
-import { Button, message, Progress, Space, Typography, Input, Select } from 'antd'
+import { Button, App, Progress, Space, Typography, Input, Select } from 'antd'
 import { InboxOutlined, VideoCameraOutlined, MessageOutlined } from '@ant-design/icons'
 import { useDropzone } from 'react-dropzone'
 import { projectApi } from '../services/api'
 import { useProjectStore } from '../store/useProjectStore'
 
 const { Text, Title } = Typography
-const { Option } = Select
 
 interface FileUploadProps {
   onUploadSuccess?: (projectId: string) => void
@@ -21,6 +20,7 @@ const DANMAKU_SOURCE_TYPES = [
 ]
 
 const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
+  const { message } = App.useApp()
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [projectName, setProjectName] = useState('')
@@ -366,13 +366,8 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
             onChange={setDanmakuSourceType}
             style={{ width: '100%' }}
             size="large"
-          >
-            {DANMAKU_SOURCE_TYPES.map(type => (
-              <Option key={type.value} value={type.value}>
-                {type.label}
-              </Option>
-            ))}
-          </Select>
+            options={DANMAKU_SOURCE_TYPES}
+          />
           <Text type="secondary" style={{ fontSize: '12px', marginTop: '4px', display: 'block' }}>
             选择弹幕来源平台，以便正确解析弹幕格式
           </Text>

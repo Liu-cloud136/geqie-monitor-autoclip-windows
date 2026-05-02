@@ -44,13 +44,13 @@ const ClipDetailPage: React.FC = () => {
     setLoading(true)
     try {
       // 从当前项目中查找对应的切片
-      const foundClip = currentProject?.clips?.find(c => c.id === clipId)
+      const foundClip = currentProject?.clips?.find(c => String(c.id) === clipId)
       if (foundClip) {
         setClip(foundClip)
         // 生成视频URL
         const url = projectApi.getClipVideoUrl(
           projectId!,
-          foundClip.id,
+          String(foundClip.id),
           foundClip.title || foundClip.generated_title
         )
         setVideoUrl(url)
@@ -337,7 +337,7 @@ const ClipDetailPage: React.FC = () => {
               <div>
                 {clip.content.map((point, index) => (
                   <div key={index} style={{ marginBottom: '8px' }}>
-                    <Text>{index + 1}. {point}</Text>
+                    <Text>{index + 1}. {point.content}</Text>
                   </div>
                 ))}
               </div>

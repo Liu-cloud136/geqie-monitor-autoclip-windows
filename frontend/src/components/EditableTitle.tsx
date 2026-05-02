@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Input, Button, Space, message, Tooltip, Modal } from 'antd'
+import { Input, Button, Space, App, Tooltip, Modal } from 'antd'
 import { EditOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons'
 import { projectApi } from '../services/api'
 import MagicWandIcon from './icons/MagicWandIcon'
@@ -21,6 +21,7 @@ const EditableTitle: React.FC<EditableTitleProps> = ({
   style,
   className
 }) => {
+  const { message } = App.useApp()
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState(title)
   const [loading, setLoading] = useState(false)
