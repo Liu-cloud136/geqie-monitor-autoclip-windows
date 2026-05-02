@@ -903,10 +903,9 @@ async def get_processing_status(
     processing_service: object = Depends(get_processing_service)
 ):
     """Get processing status of a project."""
-    import sys
-    print(f"DEBUG ENTRY get_processing_status: project_id = {project_id}", file=sys.stderr, flush=True)
+    logger.debug(f"get_processing_status: project_id = {project_id}")
     try:
-        print(f"DEBUG: processing_service = {processing_service}, type = {type(processing_service)}", file=sys.stderr, flush=True)
+        logger.debug(f"processing_service = {processing_service}, type = {type(processing_service)}")
 
         project = project_service.get(project_id)
         if not project:
@@ -966,15 +965,14 @@ async def get_processing_status(
                 "error_message": latest_task.error_message if hasattr(latest_task, 'error_message') else None
             }
         
-        print(f"DEBUG: 调用 get_processing_status, 参数: project_id={project_id}", file=sys.stderr)
+        logger.debug(f"调用 get_processing_status, 参数: project_id={project_id}")
         status = processing_service.get_processing_status(project_id)
-        print(f"DEBUG: get_processing_status 返回成功", file=sys.stderr)
+        logger.debug("get_processing_status 返回成功")
 
         return status
     except Exception as e:
         import traceback
         error_msg = f"ERROR in get_processing_status: {e}\n{traceback.format_exc()}"
-        print(error_msg, file=sys.stderr)
         logger.error(error_msg)
         raise HTTPException(status_code=400, detail=str(e))
 

@@ -8,7 +8,7 @@ import 'dayjs/locale/zh-cn'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
-import App from './App.tsx'
+import App from './App'
 import './index.css'
 
 // 配置dayjs插件
