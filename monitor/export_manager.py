@@ -423,22 +423,43 @@ class ExportManager:
         all_data = []
         
         for room_id in rooms:
+            room_data = []
+            
             # 从数据管理器获取数据
-            if hasattr(self.data_manager, 'get_data_by_room_and_date'):
-                if start_date and end_date:
-                    # 如果有明确的日期范围
-                    room_data = self.data_manager.get_data_by_room_and_date(room_id, start_date)
-                    # 这里简化处理，实际应该处理日期范围
-                else:
-                    # 获取所有数据
-                    room_data = self.data_manager.get_all_data()
-                    # 按房间过滤
-                    room_data = [item for item in room_data if item.get('room_id') == room_id]
+            if start_date and end_date:
+                # 处理日期范围
+                try:
+                    start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+                    end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+                    
+                    # 遍历日期范围获取数据
+                    current_dt = start_dt
+                    while current_dt <= end_dt:
+                        date_str = current_dt.strftime('%Y-%m-%d')
+                        if hasattr(self.data_manager, 'get_data_by_room_and_date'):
+                            day_data = self.data_manager.get_data_by_room_and_date(room_id, date_str)
+                            room_data.extend(day_data)
+                        elif hasattr(self.data_manager, 'get_data_by_date'):
+                            day_data = self.data_manager.get_data_by_date(date_str)
+                            room_data.extend([item for item in day_data if item.get('room_id') == room_id])
+                        current_dt += timedelta(days=1)
+                except Exception as e:
+                    self.logger.warning(f"处理日期范围失败: {e}")
+                    # 回退到只获取开始日期的数据
+                    if hasattr(self.data_manager, 'get_data_by_room_and_date'):
+                        room_data = self.data_manager.get_data_by_room_and_date(room_id, start_date)
+                    elif hasattr(self.data_manager, 'get_data_by_date'):
+                        day_data = self.data_manager.get_data_by_date(start_date)
+                        room_data = [item for item in day_data if item.get('room_id') == room_id]
             else:
-                # 备用方式：获取所有数据
-                room_data = self.data_manager.get_all_data()
-                # 按房间过滤
-                room_data = [item for item in room_data if item.get('room_id') == room_id]
+                # 没有指定日期范围，获取最近30天的数据
+                if hasattr(self.data_manager, 'get_data_by_room'):
+                    room_data = self.data_manager.get_data_by_room(room_id, days=30)
+                elif hasattr(self.data_manager, 'get_recent_days_data'):
+                    all_days_data = self.data_manager.get_recent_days_data(days=30)
+                    # 合并所有日期的数据
+                    for date_data in all_days_data.values():
+                        room_data.extend([item for item in date_data if item.get('room_id') == room_id])
             
             # 格式化数据
             for item in room_data:

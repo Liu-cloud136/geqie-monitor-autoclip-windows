@@ -106,24 +106,27 @@ const ClipCard: React.FC<ClipCardProps> = ({
   }, [])
 
   const getDisplayContent = useMemo(() => {
-    if (clip.recommend_reason && clip.recommend_reason.trim()) {
+    if (clip.recommend_reason && typeof clip.recommend_reason === 'string' && clip.recommend_reason.trim()) {
       return clip.recommend_reason
     }
 
     if (clip.content && clip.content.length > 0) {
-      const contentPoints = clip.content.filter(item => {
-        const text = item.trim()
-        if (text.length > 100) return false
-        if (text.split(/[，。！？；：""''（）【】]/).length > 3) return false
-        return true
-      })
+      const contentPoints = clip.content
+        .filter(item => {
+          if (!item || !item.content) return false
+          const text = item.content
+          if (text.length > 100) return false
+          if (text.split(/[，。！？；：""''（）【】]/).length > 3) return false
+          return true
+        })
+        .map(item => item.content)
 
       if (contentPoints.length > 0) {
         return contentPoints.join(' ')
       }
     }
 
-    if (clip.outline && clip.outline.trim()) {
+    if (clip.outline && typeof clip.outline === 'string' && clip.outline.trim()) {
       return clip.outline
     }
 
@@ -143,7 +146,7 @@ const ClipCard: React.FC<ClipCardProps> = ({
   // 直接使用后端生成的缩略图URL
   useEffect(() => {
     if (projectId && clip.id) {
-      const thumbnailUrl = projectApi.getClipThumbnailUrl(projectId, clip.id)
+      const thumbnailUrl = projectApi.getClipThumbnailUrl(projectId, String(clip.id))
       setVideoThumbnail(thumbnailUrl)
     }
   }, [projectId, clip.id])
